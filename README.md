@@ -6,9 +6,13 @@
 2. Về máy: git fetch && git checkout <tên-nhánh-vừa-tạo>.
 3. Code, commit theo chuẩn Conventional Commits:
 
-
    git commit -m "feat: them man hinh tim kiem"
 
+feat: thêm màn hình chi tiết trường
+fix: sửa lỗi crash khi resize biểu đồ
+docs: cập nhật SRS phần yêu cầu phi chức năng
+refactor: tách logic chấm điểm ra recommend_service
+test: thêm test case cho university_repo
 
 4. Push: git push origin <tên-nhánh>.
 5. Trên GitHub, bấm Compare & pull request. Trong mô tả PR, ghi dòng:
