@@ -1,0 +1,4 @@
+ttkbootstrap
+pymongo
+matplotlib
+python-dotenv
