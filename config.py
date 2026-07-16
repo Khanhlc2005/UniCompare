@@ -1,34 +1,35 @@
-"""Cấu hình ứng dụng UniCompare.
-
-Đọc biến môi trường từ file `.env` (xem `.env.example`).
-Theo ARCHITECTURE.md §7: thiếu MONGO_URI thì KHÔNG crash khó hiểu —
-in thông báo rõ ràng và gợi ý dùng fake_repo.
+# -*- coding: utf-8 -*-
 """
-
+config.py - doc cau hinh tu .env (python-dotenv), theo ARCHITECTURE.md muc 7:
+"config.py doc .env qua python-dotenv; thieu MONGO_URI -> thong bao ro va goi
+y dung fake_repo, khong crash kho hieu."
+"""
 import os
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGO_URI: str = os.getenv("MONGO_URI", "")
-API_KEY: str = os.getenv("API_KEY", "")
+MONGO_URI = os.getenv("MONGO_URI", "").strip()
+API_KEY = os.getenv("API_KEY", "").strip()
+
+DB_NAME = os.getenv("MONGO_DB_NAME", "unicompare").strip()
+COLLECTION_UNIVERSITIES = "universities"
+COLLECTION_AI_CACHE = "ai_cache"
+COLLECTION_WATCHLIST = "watchlist"
 
 
-def has_mongo() -> bool:
-    """True nếu đã cấu hình MONGO_URI (dùng được mongo_repo)."""
-    return bool(MONGO_URI.strip())
+def has_mongo_uri() -> bool:
+    return bool(MONGO_URI)
 
 
-def has_ai() -> bool:
-    """True nếu đã cấu hình API_KEY (dùng được L2 AI explanation)."""
-    return bool(API_KEY.strip())
-
-
-def mongo_hint() -> str:
-    """Thông báo hướng dẫn khi thiếu MONGO_URI."""
-    return (
-        "Chưa cấu hình MONGO_URI trong file .env — app sẽ chạy với fake_repo "
-        "(8 trường mẫu). Để dùng dữ liệu thật: copy .env.example thành .env "
-        "và điền MONGO_URI (xem ARCHITECTURE.md §1)."
-    )
+def warn_if_missing_mongo_uri() -> None:
+    """Goi o dau main.py / seed.py de bao ro rang thay vi crash kho hieu."""
+    if not has_mongo_uri():
+        print(
+            "[canh bao] Khong tim thay MONGO_URI trong .env.\n"
+            "  -> Neu ban dang phat trien UI/logic, hay dung repositories.fake_repo.FakeRepo\n"
+            "     thay vi mongo_repo de khong can ket noi Mongo that.\n"
+            "  -> Neu ban muon nap du lieu that, tao file .env (xem .env.example) va dien:\n"
+            "       MONGO_URI=mongodb://localhost:27017\n"
+            "       API_KEY=...\n"
+        )
