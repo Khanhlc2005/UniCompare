@@ -18,18 +18,23 @@ COLLECTION_AI_CACHE = "ai_cache"
 COLLECTION_WATCHLIST = "watchlist"
 
 
-def has_mongo_uri() -> bool:
+def has_mongo() -> bool:
     return bool(MONGO_URI)
+
+
+def mongo_hint() -> str:
+    """Goi y khi thieu MONGO_URI, dung chung cho canh bao va thong bao loi."""
+    return (
+        "Khong tim thay MONGO_URI trong .env.\n"
+        "  -> Neu ban dang phat trien UI/logic, hay dung repositories.fake_repo.FakeRepo\n"
+        "     thay vi mongo_repo de khong can ket noi Mongo that.\n"
+        "  -> Neu ban muon nap du lieu that, tao file .env (xem .env.example) va dien:\n"
+        "       MONGO_URI=mongodb://localhost:27017\n"
+        "       API_KEY=...\n"
+    )
 
 
 def warn_if_missing_mongo_uri() -> None:
     """Goi o dau main.py / seed.py de bao ro rang thay vi crash kho hieu."""
-    if not has_mongo_uri():
-        print(
-            "[canh bao] Khong tim thay MONGO_URI trong .env.\n"
-            "  -> Neu ban dang phat trien UI/logic, hay dung repositories.fake_repo.FakeRepo\n"
-            "     thay vi mongo_repo de khong can ket noi Mongo that.\n"
-            "  -> Neu ban muon nap du lieu that, tao file .env (xem .env.example) va dien:\n"
-            "       MONGO_URI=mongodb://localhost:27017\n"
-            "       API_KEY=...\n"
-        )
+    if not has_mongo():
+        print(f"[canh bao] {mongo_hint()}")
