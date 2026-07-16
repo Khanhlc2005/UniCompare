@@ -1,1 +1,1 @@
-
+"""UniCompare views package."""

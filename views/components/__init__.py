@@ -1,1 +1,1 @@
-
+"""UniCompare UI components package."""
