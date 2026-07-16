@@ -175,12 +175,12 @@ trước khi nạp.
 
 Mục đích: cùng một hồ sơ không gọi lại AI API — tiết kiệm quota, phản hồi nhanh.
 
-### Collection `watchlist` *(đề xuất mới — tài liệu tổng hợp chưa chốt nơi lưu)*
+### Collection `watchlist`
 
 App single-user nên chỉ cần lưu danh sách id:
 `{"university_id": "…", "saved_at": ISODate}`. Phương án thay thế là file JSON local,
 nhưng lưu vào Mongo đồng nhất với repository pattern và thỏa DoD
-"không còn hard-code dữ liệu mẫu". **Cần chốt trong họp nhóm tuần 1.**
+"không còn hard-code dữ liệu mẫu". **Đã chốt: dùng Mongo collection.**
 
 ---
 
