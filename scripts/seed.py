@@ -45,7 +45,7 @@ def load_and_validate() -> list[dict]:
 
 def seed_mongo(data: list[dict]) -> None:
     config.warn_if_missing_mongo_uri()
-    if not config.has_mongo_uri():
+    if not config.has_mongo():
         print("[dung] Khong the nap vi thieu MONGO_URI. Xem huong dan phia tren.")
         sys.exit(1)
 
