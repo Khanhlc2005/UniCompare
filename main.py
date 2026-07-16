@@ -13,20 +13,11 @@ def main() -> None:
     if not config.has_mongo():
         print(config.mongo_hint())
 
-    # --- Khởi tạo repository (đổi 1 dòng ở tuần 2, Issue 2.3) ---
-    # from repositories.fake_repo import FakeRepo          # Issue 1.0b
-    # repo = FakeRepo()
-    # repo = MongoRepo(config.MONGO_URI)                   # Tuần 2
+    # --- Khởi tạo AppShell (Tkinter Window) ---
+    from views.app_shell import AppShell
 
-    # --- Khởi tạo service (nhận repo qua constructor) ---
-    # uni_service = UniversityService(repo)                # Issue 1.4
-
-    # --- Khởi tạo AppShell (ttkbootstrap Window) ---
-    # from app_shell import AppShell                       # Issue 1.9
-    # app = AppShell(uni_service, ...)
-    # app.mainloop()
-
-    print("UniCompare — setup OK. Chờ Issue 1.0b (fake_repo) và 1.9 (AppShell).")
+    app = AppShell()
+    app.mainloop()
 
 
 if __name__ == "__main__":
