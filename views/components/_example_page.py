@@ -1,83 +1,49 @@
-"""Ví dụ: Cách tạo trang mới trong UniCompare.
-
-File này là MẪU THAM KHẢO cho đồng đội.
-Sau khi hiểu cách hoạt động, hãy xóa file này và tạo file riêng.
+"""Ví dụ: Cách tạo View mới trong UniCompare, đúng Frame contract đã chốt
+(ARCHITECTURE.md mục 5.1). File này là MẪU THAM KHẢO — sau khi hiểu cách
+hoạt động, hãy xóa file này và tạo file riêng cho màn của bạn.
 
 ══════════════════════════════════════════════════════
-HƯỚNG DẪN 3 BƯỚC ĐỂ THÊM TRANG MỚI:
+4 BƯỚC ĐỂ THÊM VIEW MỚI:
 ══════════════════════════════════════════════════════
 
-Bước 1: Tạo file views/components/<ten_trang>.py
-Bước 2: Viết class kế thừa BasePage, override _build_content()
-Bước 3: Đăng ký vào PAGE_REGISTRY
-
-Xong! Không cần sửa app_shell.py hay sidebar.py.
+1. Tạo file views/components/<ten_view>.py
+2. Viết class kế thừa thẳng ttk.Frame, constructor (self, master, controller)
+   — không cần base class/interface nào khác.
+3. Viết refresh(self, **kwargs) — AppShell gọi hàm này mỗi lần frame được
+   đưa lên (tkraise), để dữ liệu luôn mới.
+4. Đăng ký trong views/app_shell.py, dict FRAME_CLASSES:
+       "search": SearchPage
 ══════════════════════════════════════════════════════
 """
 
-import tkinter as tk
-from views.components.base_page import BasePage, PAGE_REGISTRY
-from views.components.base_page import MAIN_BG, CARD_BG, TEXT_DARK, TEXT_GRAY, BORDER_COLOR
+import ttkbootstrap as tb
+
+from views.components.scrollable_frame import ScrollableFrame
 
 
-class SearchPage(BasePage):
-    """Trang Tìm kiếm — VÍ DỤ MẪU.
+class SearchPage(tb.Frame):
+    """Ví dụ mẫu — Huy sẽ thay nội dung thật ở Issue 1.5."""
 
-    Đây là ví dụ minh họa cách tạo trang mới.
-    Đồng đội phụ trách trang Tìm kiếm sẽ thay thế nội dung này.
-    """
+    def __init__(self, master, controller):
+        super().__init__(master)
+        self._controller = controller
 
-    # Override tiêu đề và icon
-    PAGE_TITLE = "Tìm kiếm trường đại học"
-    PAGE_ICON = "🔍"
+        self._scroll = ScrollableFrame(self)
+        self._scroll.pack(fill="both", expand=True)
 
-    def __init__(self, parent, on_navigate=None, **kwargs):
-        # Nếu cần thêm tham số (VD: repo, service), thêm vào đây
-        # self._repo = repo
-        super().__init__(parent, on_navigate=on_navigate, **kwargs)
+        tb.Label(
+            self._scroll.body, text="Tìm kiếm trường đại học",
+            font=("Segoe UI", 16, "bold")
+        ).pack(anchor="w", padx=28, pady=(20, 12))
 
-    def _build_content(self, container):
-        """Override method này — đây là nơi xây dựng giao diện trang.
+        entry = tb.Entry(self._scroll.body)
+        entry.pack(fill="x", padx=28, pady=(0, 16))
 
-        Args:
-            container: tk.Frame đã có sẵn scroll, cứ pack/grid thoải mái.
-        """
-        # ── Ví dụ: Search bar ──
-        search_frame = tk.Frame(container, bg=CARD_BG, padx=20, pady=16,
-                                highlightbackground=BORDER_COLOR,
-                                highlightthickness=1)
-        search_frame.pack(fill="x", padx=28, pady=(8, 16))
+        tb.Label(
+            self._scroll.body, text="Kết quả sẽ hiển thị ở đây...",
+            bootstyle="secondary"
+        ).pack(anchor="w", padx=28)
 
-        tk.Label(
-            search_frame, text="🔍  Nhập từ khóa tìm kiếm:",
-            bg=CARD_BG, fg=TEXT_DARK,
-            font=("Segoe UI", 12, "bold")
-        ).pack(anchor="w", pady=(0, 8))
-
-        entry = tk.Entry(
-            search_frame, font=("Segoe UI", 12),
-            bd=1, relief="solid"
-        )
-        entry.pack(fill="x", pady=(0, 8))
-
-        # ── Ví dụ: Kết quả ──
-        results_frame = tk.Frame(container, bg=CARD_BG, padx=20, pady=16,
-                                 highlightbackground=BORDER_COLOR,
-                                 highlightthickness=1)
-        results_frame.pack(fill="x", padx=28, pady=(0, 16))
-
-        tk.Label(
-            results_frame, text="Kết quả sẽ hiển thị ở đây...",
-            bg=CARD_BG, fg=TEXT_GRAY,
-            font=("Segoe UI", 11)
-        ).pack(pady=20)
-
-
-# ═══════════════════════════════════════════════════════════════
-# BƯỚC 3: Đăng ký trang vào registry
-# Key phải khớp với menu key trong sidebar.py:
-#   "favorite", "search", "compare", "chatbot"
-# ═══════════════════════════════════════════════════════════════
-
-# BỎ COMMENT DÒNG DƯỚI ĐỂ KÍCH HOẠT (khi đã code xong):
-# PAGE_REGISTRY["search"] = SearchPage
+    def refresh(self, **kwargs):
+        """Gọi khi frame được tkraise() lên — đọc lại dữ liệu nếu cần."""
+        pass
