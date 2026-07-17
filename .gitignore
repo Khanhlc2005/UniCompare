@@ -217,3 +217,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Claude Code / ghi chu ca nhan - khong commit
+CLAUDE.md
+.claude/
