@@ -22,6 +22,7 @@ from views.components.sidebar import Sidebar
 from views.components.home_page import HomePage
 from views.components.detail_page import DetailPage
 from views.components.watchlist_page import WatchlistPage
+from views.components.compare_page import ComparePage
 from views.components.placeholder_page import PlaceholderPage
 from repositories.fake_repo import FakeRepo
 
@@ -37,7 +38,7 @@ FRAME_SPECS = {
     "favorite": WatchlistPage,
     "detail": DetailPage,   # mo tu card, khong nam trong sidebar menu
     "search": ("Tìm kiếm", "🔍"),
-    "compare": ("So sánh", "📊"),
+    "compare": ComparePage,
     "chatbot": ("Chatbot", "🤖"),
 }
 
