@@ -25,6 +25,7 @@ from views.components.watchlist_page import WatchlistPage
 from views.components.compare_page import ComparePage
 from views.components.placeholder_page import PlaceholderPage
 from repositories.fake_repo import FakeRepo
+from views.components.search_page import SearchPage
 
 
 APP_TITLE = "UniCompare — Academic Insights"
@@ -37,7 +38,7 @@ FRAME_SPECS = {
     "home": HomePage,
     "favorite": WatchlistPage,
     "detail": DetailPage,   # mo tu card, khong nam trong sidebar menu
-    "search": ("Tìm kiếm", "🔍"),
+    "search": SearchPage,
     "compare": ComparePage,
     "chatbot": ("Chatbot", "🤖"),
 }
