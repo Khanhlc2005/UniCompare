@@ -156,9 +156,13 @@ class SearchPage(tb.Frame):
         )
         country_lbl.pack(anchor="w", pady=(4, 8))
 
-        tuition = uni.get("tuition")
-        tuition_text = f"${tuition:,}" if isinstance(tuition, (int, float)) else "N/A"
-        stats_text = f"GPA {uni.get('gpa', 'N/A')}  •  IELTS {uni.get('ielts', 'N/A')}  •  {tuition_text}"
+        # dung chung ham doc field voi university_service.search() de card
+        # hien dung du lieu du khi con o fake_repo hay da doi sang schema chuan
+        tuition = university_service.lay_hoc_phi(uni)
+        tuition_text = f"${tuition:,.0f}" if tuition is not None else "N/A"
+        ielts = university_service.lay_ielts(uni)
+        gpa = uni.get("gpa_min", uni.get("gpa", "N/A"))
+        stats_text = f"GPA {gpa}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
         stats_lbl = tb.Label(card, text=stats_text, foreground=self._colors.secondary)
         stats_lbl.pack(anchor="w")
 
