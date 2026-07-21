@@ -24,16 +24,16 @@ class FormField:
     required: bool = False
 
 
+# nho: field phai khop dung ten fake_repo.py dang dung (id, name, country,
+# gpa, ielts, tuition, description) - khong phai schema ARCHITECTURE.md,
+# vi tuan 1 AdminView chay tren fake_repo (xem PLAN.md Issue 1.3)
 FORM_FIELDS = (
     FormField("name", "Tên trường", True),
     FormField("country", "Quốc gia", True),
-    FormField("city", "Thành phố"),
-    FormField("university_type", "Loại hình"),
-    FormField("qs_rank", "Xếp hạng QS"),
-    FormField("tuition_usd", "Học phí/năm (USD)"),
-    FormField("ielts_min", "IELTS tối thiểu"),
-    FormField("employment_rate", "Tỷ lệ việc làm (%)"),
-    FormField("application_deadline", "Hạn nộp hồ sơ"),
+    FormField("gpa", "GPA tối thiểu"),
+    FormField("ielts", "IELTS tối thiểu"),
+    FormField("tuition", "Học phí/năm (USD)"),
+    FormField("description", "Mô tả"),
 )
 
 
@@ -43,9 +43,9 @@ class AdminView(ttk.Frame):
     TREE_COLUMNS = (
         "name",
         "country",
-        "qs_rank",
-        "tuition_usd",
-        "ielts_min",
+        "gpa",
+        "ielts",
+        "tuition",
     )
 
     def __init__(
@@ -221,16 +221,16 @@ class AdminView(ttk.Frame):
         headings = {
             "name": "Tên trường",
             "country": "Quốc gia",
-            "qs_rank": "QS",
-            "tuition_usd": "Học phí",
-            "ielts_min": "IELTS",
+            "gpa": "GPA",
+            "ielts": "IELTS",
+            "tuition": "Học phí",
         }
         widths = {
             "name": 260,
             "country": 120,
-            "qs_rank": 70,
-            "tuition_usd": 105,
-            "ielts_min": 70,
+            "gpa": 70,
+            "ielts": 70,
+            "tuition": 105,
         }
 
         for column in self.TREE_COLUMNS:
@@ -387,19 +387,11 @@ class AdminView(ttk.Frame):
                     "",
                     "end",
                     values=(
-                        self._display_value(
-                            document.get("name", document.get("university_name", ""))
-                        ),
+                        self._display_value(document.get("name", "")),
                         self._display_value(document.get("country", "")),
-                        self._display_value(
-                            document.get("qs_rank", document.get("rank", ""))
-                        ),
-                        self._format_tuition(
-                            document.get("tuition_usd", document.get("tuition", ""))
-                        ),
-                        self._display_value(
-                            document.get("ielts_min", document.get("ielts", ""))
-                        ),
+                        self._display_value(document.get("gpa", "")),
+                        self._display_value(document.get("ielts", "")),
+                        self._format_tuition(document.get("tuition", "")),
                     ),
                     tags=(document_id,),
                 )
@@ -435,25 +427,8 @@ class AdminView(ttk.Frame):
 
         self.selected_id = document_id
 
-        aliases = {
-            "name": ("name", "university_name"),
-            "country": ("country",),
-            "city": ("city",),
-            "university_type": ("university_type", "type"),
-            "qs_rank": ("qs_rank", "rank"),
-            "tuition_usd": ("tuition_usd", "tuition"),
-            "ielts_min": ("ielts_min", "ielts"),
-            "employment_rate": ("employment_rate",),
-            "application_deadline": ("application_deadline", "deadline"),
-        }
-
-        for field_key, possible_keys in aliases.items():
-            value = ""
-            for possible_key in possible_keys:
-                if possible_key in document:
-                    value = document.get(possible_key, "")
-                    break
-            self.form_vars[field_key].set(self._display_value(value))
+        for field in FORM_FIELDS:
+            self.form_vars[field.key].set(self._display_value(document.get(field.key, "")))
 
         self.status_var.set(f"Đang chọn: {self.form_vars['name'].get() or document_id}")
 
@@ -466,19 +441,6 @@ class AdminView(ttk.Frame):
         self.selected_id = None
         self.tree.selection_remove(self.tree.selection())
         self.status_var.set("Đã xóa nội dung form.")
-
-    @staticmethod
-    def _to_optional_int(raw_value: str, field_label: str) -> int | None:
-        value = raw_value.strip()
-        if not value:
-            return None
-        try:
-            number = int(value.replace(",", "").replace("#", ""))
-        except ValueError as exc:
-            raise ValueError(f"{field_label} phải là số nguyên.") from exc
-        if number < 0:
-            raise ValueError(f"{field_label} không được âm.")
-        return number
 
     @staticmethod
     def _to_optional_float(raw_value: str, field_label: str) -> float | None:
@@ -502,40 +464,22 @@ class AdminView(ttk.Frame):
         if not country:
             raise ValueError("Quốc gia là trường bắt buộc.")
 
-        qs_rank = self._to_optional_int(
-            self.form_vars["qs_rank"].get(), "Xếp hạng QS"
-        )
-        tuition = self._to_optional_float(
-            self.form_vars["tuition_usd"].get(), "Học phí"
-        )
-        ielts = self._to_optional_float(
-            self.form_vars["ielts_min"].get(), "IELTS tối thiểu"
-        )
-        employment = self._to_optional_float(
-            self.form_vars["employment_rate"].get(), "Tỷ lệ việc làm"
-        )
+        gpa = self._to_optional_float(self.form_vars["gpa"].get(), "GPA")
+        ielts = self._to_optional_float(self.form_vars["ielts"].get(), "IELTS tối thiểu")
+        tuition = self._to_optional_float(self.form_vars["tuition"].get(), "Học phí")
 
+        if gpa is not None and gpa > 4:
+            raise ValueError("GPA phải nằm trong khoảng 0 đến 4.")
         if ielts is not None and ielts > 9:
             raise ValueError("IELTS phải nằm trong khoảng 0 đến 9.")
-        if employment is not None and employment > 100:
-            raise ValueError("Tỷ lệ việc làm phải nằm trong khoảng 0 đến 100.")
 
         payload: Document = {
             "name": name,
             "country": country,
-            "city": self.form_vars["city"].get().strip(),
-            "university_type": self.form_vars["university_type"].get().strip(),
-            "application_deadline": self.form_vars[
-                "application_deadline"
-            ].get().strip(),
+            "description": self.form_vars["description"].get().strip(),
         }
 
-        optional_values = {
-            "qs_rank": qs_rank,
-            "tuition_usd": tuition,
-            "ielts_min": ielts,
-            "employment_rate": employment,
-        }
+        optional_values = {"gpa": gpa, "ielts": ielts, "tuition": tuition}
         payload.update(
             {key: value for key, value in optional_values.items() if value is not None}
         )
@@ -678,37 +622,28 @@ class MemoryUniversityRepository:
                 "id": "1",
                 "name": "National University of Singapore",
                 "country": "Singapore",
-                "city": "Singapore",
-                "university_type": "Công lập",
-                "qs_rank": 8,
-                "tuition_usd": 22000,
-                "ielts_min": 7.5,
-                "employment_rate": 96,
-                "application_deadline": "2027-02-15",
+                "gpa": 3.8,
+                "ielts": 7.5,
+                "tuition": 22000,
+                "description": "Dai hoc so 1 Chau A.",
             },
             {
                 "id": "2",
                 "name": "University of Melbourne",
                 "country": "Australia",
-                "city": "Melbourne",
-                "university_type": "Công lập",
-                "qs_rank": 14,
-                "tuition_usd": 28500,
-                "ielts_min": 7.0,
-                "employment_rate": 88,
-                "application_deadline": "2027-01-31",
+                "gpa": 3.7,
+                "ielts": 7.0,
+                "tuition": 28500,
+                "description": "Top dau Australia, manh ve nghien cuu.",
             },
             {
                 "id": "3",
                 "name": "University of Toronto",
                 "country": "Canada",
-                "city": "Toronto",
-                "university_type": "Công lập",
-                "qs_rank": 21,
-                "tuition_usd": 29000,
-                "ielts_min": 6.5,
-                "employment_rate": 90,
-                "application_deadline": "2027-01-15",
+                "gpa": 3.6,
+                "ielts": 6.5,
+                "tuition": 29000,
+                "description": "Top dau Canada, co so vat chat hien dai.",
             },
         ]
 
