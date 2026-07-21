@@ -107,3 +107,52 @@ def test_get_countries_tra_ve_danh_sach_khong_trung(repo):
     countries = university_service.get_countries(repo)
     assert len(countries) == len(set(countries))
     assert "USA" in countries
+
+
+# ─── Fallback schema chuan (tuition_per_year/ielts_min) - tranh loi am tham
+# loc sai khi doi sang mongo_repo/du lieu that (xem CLAUDE.md schema mismatch) ─
+class _RepoSchemaChuan:
+    """Repo gia lap tra du lieu theo schema ARCHITECTURE.md/seed_data.json,
+    khong con field tuition/ielts cu."""
+
+    def __init__(self, data):
+        self._data = data
+
+    def get_all(self):
+        return [d.copy() for d in self._data]
+
+    def search(self, keyword: str = "", country: str | None = None):
+        results = []
+        for uni in self._data:
+            match_country = country.lower() == uni["country"].lower() if country else True
+            if match_country:
+                results.append(uni.copy())
+        return results
+
+
+def test_loc_hoc_phi_theo_schema_chuan_tuition_per_year():
+    repo_chuan = _RepoSchemaChuan([
+        {"id": "1", "name": "A", "country": "Japan", "tuition_per_year": 10000},
+        {"id": "2", "name": "B", "country": "Japan", "tuition_per_year": 50000},
+    ])
+    ket_qua = university_service.search(repo_chuan, tuition_max=20000)
+    assert [uni["id"] for uni in ket_qua] == ["1"]
+
+
+def test_loc_ielts_theo_schema_chuan_ielts_min():
+    repo_chuan = _RepoSchemaChuan([
+        {"id": "1", "name": "A", "country": "Japan", "ielts_min": 6.0},
+        {"id": "2", "name": "B", "country": "Japan", "ielts_min": 7.5},
+    ])
+    ket_qua = university_service.search(repo_chuan, ielts_max=6.5)
+    assert [uni["id"] for uni in ket_qua] == ["1"]
+
+
+def test_loc_hoc_phi_loai_truong_thieu_du_lieu_thay_vi_am_tham_cho_qua():
+    """Truoc fix: uni.get("tuition", 0) mac dinh 0 -> record thieu field
+    van luon qua duoc filter <=. Gio phai loai ra vi khong xac dinh duoc."""
+    repo_chuan = _RepoSchemaChuan([
+        {"id": "1", "name": "A", "country": "Japan"},
+    ])
+    ket_qua = university_service.search(repo_chuan, tuition_max=100)
+    assert ket_qua == []
