@@ -64,3 +64,66 @@ def test_clear_compare_xoa_het():
     compare_service.clear_compare()
 
     assert compare_service.get_compare_ids() == []
+
+
+# ---- Issue 2.8: xac_dinh_tot_nhat (highlight gia tri tot nhat moi tieu chi) ----
+
+def test_hoc_phi_thap_hon_duoc_highlight():
+    data = [
+        {"id": "1", "tuition_per_year": 55000},
+        {"id": "2", "tuition_per_year": 35000},
+        {"id": "3", "tuition_per_year": 40000},
+    ]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["tuition"] == {"2"}
+
+
+def test_ranking_so_nho_hon_duoc_highlight():
+    # so hang cang nho cang tot (hang 5 tot hon hang 30), khong phai MAX gia tri so
+    data = [
+        {"id": "1", "ranking": 30},
+        {"id": "2", "ranking": 5},
+    ]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["ranking"] == {"2"}
+
+
+def test_bang_diem_thi_highlight_ca_hai_khong_chon_ngau_nhien_1():
+    data = [
+        {"id": "1", "gpa_min": 3.8},
+        {"id": "2", "gpa_min": 3.8},
+        {"id": "3", "gpa_min": 3.9},
+    ]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["gpa"] == {"1", "2"}
+
+
+def test_ho_tro_ca_schema_chuan_va_schema_cu_fake_repo():
+    # id "1" dung field schema cu (tuition/ielts/gpa), id "2" dung field
+    # schema chuan (tuition_per_year/ielts_min/gpa_min) - phai doc dung ca 2
+    data = [
+        {"id": "1", "tuition": 30000, "ielts": 6.0, "gpa": 3.2},
+        {"id": "2", "tuition_per_year": 40000, "ielts_min": 7.0, "gpa_min": 3.5},
+    ]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["tuition"] == {"1"}
+    assert ket_qua["ielts"] == {"1"}
+    assert ket_qua["gpa"] == {"1"}
+
+
+def test_tieu_chi_thieu_du_lieu_het_thi_tra_ve_set_rong():
+    # fake_repo hien tai chua co field ranking - khong duoc crash, cung
+    # khong duoc highlight bua truong nao
+    data = [{"id": "1", "tuition": 1000}, {"id": "2", "tuition": 2000}]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["ranking"] == set()
+
+
+def test_truong_thieu_field_khong_duoc_tinh_la_tot_nhat():
+    # truong "2" khong co du lieu hoc phi -> khong duoc am tham la "tot nhat"
+    data = [
+        {"id": "1", "tuition": 50000},
+        {"id": "2"},
+    ]
+    ket_qua = compare_service.xac_dinh_tot_nhat(data)
+    assert ket_qua["tuition"] == {"1"}
