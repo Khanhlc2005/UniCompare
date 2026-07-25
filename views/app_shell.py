@@ -25,6 +25,8 @@ from views.components.watchlist_page import WatchlistPage
 from views.components.compare_page import ComparePage
 from views.components.placeholder_page import PlaceholderPage
 from repositories.fake_repo import FakeRepo
+from repositories.mongo_repo import MongoUniversityRepository
+import config
 
 
 APP_TITLE = "UniCompare — Academic Insights"
@@ -75,7 +77,11 @@ class AppShell(tb.Window):
             self.style.map(style_name, foreground=[("active", fg)], background=[("active", bg)])
 
         # repo dung chung cho moi View, lay qua controller.repo
-        self.repo = FakeRepo()
+        # Issue 2.3: dùng MongoRepo nếu có MONGO_URI, fallback FakeRepo
+        if config.has_mongo():
+            self.repo = MongoUniversityRepository()
+        else:
+            self.repo = FakeRepo()
 
         self._sidebar = Sidebar(self, on_navigate=self.show_frame)
         self._sidebar.pack(side="left", fill="y")
