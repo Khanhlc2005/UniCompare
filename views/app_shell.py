@@ -16,6 +16,8 @@ khai báo MỘT chỗ duy nhất ở đây qua `self.style.colors` (ARCHITECTURE
 không tự khai màu rời.
 """
 
+import tkinter as tk
+
 import ttkbootstrap as tb
 
 from views.components.sidebar import Sidebar
@@ -27,6 +29,8 @@ from views.components.placeholder_page import PlaceholderPage
 from repositories.fake_repo import FakeRepo
 from repositories.mongo_repo import MongoUniversityRepository
 import config
+from views.components.search_page import SearchPage
+from views.admin_view import open_admin_window
 
 
 APP_TITLE = "UniCompare — Academic Insights"
@@ -39,7 +43,7 @@ FRAME_SPECS = {
     "home": HomePage,
     "favorite": WatchlistPage,
     "detail": DetailPage,   # mo tu card, khong nam trong sidebar menu
-    "search": ("Tìm kiếm", "🔍"),
+    "search": SearchPage,
     "compare": ComparePage,
     "chatbot": ("Chatbot", "🤖"),
 }
@@ -83,6 +87,10 @@ class AppShell(tb.Window):
         else:
             self.repo = FakeRepo()
 
+        # Admin man rieng ngoai luong chinh (ARCHITECTURE.md muc 5.2, wireframe 8)
+        # - khong nam trong sidebar/tkraise, mo bang Toplevel qua menu bar.
+        self.config(menu=self._build_menu_bar())
+
         self._sidebar = Sidebar(self, on_navigate=self.show_frame)
         self._sidebar.pack(side="left", fill="y")
 
@@ -102,6 +110,18 @@ class AppShell(tb.Window):
             self._frames[key] = frame
 
         self.show_frame("home")
+
+    def _build_menu_bar(self):
+        """Menu bar rieng cho Admin - tach khoi sidebar vi Admin khong phai
+        1 trong 5 frame chinh (xem PLAN.md Issue 1.9: "Admin tach rieng")."""
+        menu_bar = tk.Menu(self)
+        quan_tri_menu = tk.Menu(menu_bar, tearoff=False)
+        quan_tri_menu.add_command(label="Mở màn Quản trị", command=self._open_admin)
+        menu_bar.add_cascade(label="Quản trị", menu=quan_tri_menu)
+        return menu_bar
+
+    def _open_admin(self):
+        open_admin_window(self, self.repo)
 
     def show_frame(self, name, **kwargs):
         """Controller API dùng chung cho mọi View: chuyển sang frame `name`,
