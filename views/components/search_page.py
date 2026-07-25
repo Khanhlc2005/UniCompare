@@ -11,15 +11,21 @@ IELTS, kết hợp AND với nhau) -> card grid kết quả.
 Dữ liệu: dùng controller.repo (fake_repo ở tuần 1). Khi Issue 2.3 đổi sang
 mongo_repo ở app_shell.py, page này không cần sửa gì vì chỉ phụ thuộc
 UniversityRepo interface (get_all/search) qua university_service.
+
+Issue 2.9 (Khánh): thêm StickyCompareBar dùng chung với Watchlist + nút
+tick "So sánh" trên mỗi card — CHỈ thêm phần này, không đổi logic
+search/filter của Huy ở trên.
 """
 
 import tkinter as tk
+from tkinter import messagebox
 
 import ttkbootstrap as tb
 
-from services import university_service
+from services import university_service, compare_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.pill_filter import PillFilter
+from views.components.compare_bar import CompareBar
 
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
@@ -58,8 +64,13 @@ class SearchPage(tb.Frame):
 
         self._build_header()
 
-        # 2 khu vuc nay se bi xoa/ve lai moi lan filter doi (_render); search
-        # bar nam ngoai de khong mat focus/con tro khi go tung ky tu
+        # 3 khu vuc nay se bi xoa/ve lai moi lan filter doi (_render); search
+        # bar nam ngoai de khong mat focus/con tro khi go tung ky tu.
+        # _compare_bar_holder khong co padx/pady rieng - de luc CompareBar tu
+        # an (0 truong duoc chon) thi khong con khoang trong thua lai (xem
+        # compare_bar.py refresh())
+        self._compare_bar_holder = tb.Frame(self._scroll.body)
+        self._compare_bar_holder.pack(fill="x")
         self._filters_holder = tb.Frame(self._scroll.body)
         self._filters_holder.pack(fill="x", padx=28, pady=(0, 8))
         self._results_holder = tb.Frame(self._scroll.body)
@@ -85,11 +96,14 @@ class SearchPage(tb.Frame):
         self._render()
 
     def _render(self):
+        for w in self._compare_bar_holder.winfo_children():
+            w.destroy()
         for w in self._filters_holder.winfo_children():
             w.destroy()
         for w in self._results_holder.winfo_children():
             w.destroy()
 
+        self._build_compare_bar()
         self._build_filters()
 
         tuition_max = dict(TUITION_PILLS).get(self._active_tuition_label)
@@ -116,6 +130,17 @@ class SearchPage(tb.Frame):
         for idx, uni in enumerate(results):
             card = self._build_card(grid, uni)
             card.grid(row=idx // cols, column=idx % cols, sticky="nsew", padx=6, pady=6)
+
+    def _build_compare_bar(self):
+        """Issue 2.9: doc chung compare_service voi Watchlist - CompareBar tu
+        an khi chua chon truong nao (xem compare_bar.py refresh())."""
+        CompareBar(
+            self._compare_bar_holder, on_compare=self._go_to_compare,
+            pack_opts={"fill": "x", "padx": 28, "pady": (0, 12)},
+        )
+
+    def _go_to_compare(self):
+        self._controller.show_frame("compare")
 
     def _build_filters(self):
         countries = university_service.get_countries(self._controller.repo)
@@ -164,7 +189,7 @@ class SearchPage(tb.Frame):
         gpa = uni.get("gpa_min", uni.get("gpa", "N/A"))
         stats_text = f"GPA {gpa}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
         stats_lbl = tb.Label(card, text=stats_text, foreground=self._colors.secondary)
-        stats_lbl.pack(anchor="w")
+        stats_lbl.pack(anchor="w", pady=(0, 8))
 
         # ca card co the click de mo Detail, khong chi rieng ten truong
         for widget in (card, name_lbl, country_lbl, stats_lbl):
@@ -173,7 +198,24 @@ class SearchPage(tb.Frame):
                 lambda e, uid=uni["id"]: self._controller.show_frame("detail", university_id=uid)
             )
 
+        # Issue 2.9: tick them/bo truong khoi danh sach so sanh - dung chung
+        # compare_service voi Watchlist, khong giu state rieng o day
+        compare_var = tk.BooleanVar(value=uni["id"] in compare_service.get_compare_ids())
+        tb.Checkbutton(
+            card, text="So sánh", variable=compare_var,
+            bootstyle="success-round-toggle",
+            command=lambda uid=uni["id"], var=compare_var: self._toggle_compare(uid, var)
+        ).pack(anchor="w")
+
         return card
+
+    def _toggle_compare(self, uni_id, var):
+        ok, msg = compare_service.toggle_compare(uni_id)
+        if not ok:
+            var.set(False)  # bi chan (qua 5 truong) thi bo tick lai
+            messagebox.showwarning("Không thể thêm vào so sánh", msg)
+            return
+        self._render()
 
     def _on_country_select(self, value):
         self._active_country = value

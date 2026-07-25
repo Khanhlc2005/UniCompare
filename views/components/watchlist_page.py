@@ -64,8 +64,12 @@ class WatchlistPage(tb.Frame):
             )
             return
 
-        compare_bar = CompareBar(self._scroll.body, on_compare=self._go_to_compare)
-        compare_bar.pack(fill="x", padx=28, pady=(0, 12))
+        # Issue 2.9: CompareBar tu quyet dinh an/hien theo so luong dang chon
+        # (xem compare_bar.py refresh()) - khong con goi .pack() rieng o day
+        CompareBar(
+            self._scroll.body, on_compare=self._go_to_compare,
+            pack_opts={"fill": "x", "padx": 28, "pady": (0, 12)},
+        )
 
         # pill loc quoc gia lay tu chinh cac truong da luu (khong phai toan bo DB)
         countries = sorted({uni["country"] for uni in all_data})
