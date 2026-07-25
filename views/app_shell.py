@@ -27,6 +27,8 @@ from views.components.watchlist_page import WatchlistPage
 from views.components.compare_page import ComparePage
 from views.components.placeholder_page import PlaceholderPage
 from repositories.fake_repo import FakeRepo
+from repositories.mongo_repo import MongoUniversityRepository
+import config
 from views.components.search_page import SearchPage
 from views.admin_view import open_admin_window
 
@@ -79,7 +81,11 @@ class AppShell(tb.Window):
             self.style.map(style_name, foreground=[("active", fg)], background=[("active", bg)])
 
         # repo dung chung cho moi View, lay qua controller.repo
-        self.repo = FakeRepo()
+        # Issue 2.3: dùng MongoRepo nếu có MONGO_URI, fallback FakeRepo
+        if config.has_mongo():
+            self.repo = MongoUniversityRepository()
+        else:
+            self.repo = FakeRepo()
 
         # Admin man rieng ngoai luong chinh (ARCHITECTURE.md muc 5.2, wireframe 8)
         # - khong nam trong sidebar/tkraise, mo bang Toplevel qua menu bar.
