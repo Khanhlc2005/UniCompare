@@ -12,7 +12,7 @@ from tkinter import messagebox
 
 import ttkbootstrap as tb
 
-from services import watchlist_service, compare_service
+from services import watchlist_service, compare_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
@@ -103,35 +103,51 @@ class WatchlistPage(tb.Frame):
         tb.Label(empty, text=message, foreground=self._colors.secondary, justify="center").pack(pady=(10, 0))
 
     def _build_card(self, parent, uni):
-        card = tb.Frame(parent, bootstyle="light", padding=16)
+        card = tb.Frame(parent, bootstyle="light", padding=16, cursor="hand2")
 
-        tb.Label(
+        uid = uni.get("id") or str(uni.get("_id", ""))
+        name_lbl = tb.Label(
             card, text=uni.get("name", ""), foreground=self._colors.primary,
-            font=("Segoe UI", 11, "bold"), wraplength=220, justify="left"
-        ).pack(anchor="w")
+            font=("Segoe UI", 11, "bold"), wraplength=220, justify="left",
+            cursor="hand2"
+        )
+        name_lbl.pack(anchor="w")
 
-        tb.Label(
+        country_lbl = tb.Label(
             card, text=f"📍 {uni.get('country', '')}", foreground=self._colors.secondary
-        ).pack(anchor="w", pady=(4, 8))
+        )
+        country_lbl.pack(anchor="w", pady=(4, 8))
 
-        tuition = uni.get("tuition")
-        tuition_text = f"${tuition:,}" if isinstance(tuition, (int, float)) else "N/A"
-        stats = f"GPA {uni.get('gpa', 'N/A')}  •  IELTS {uni.get('ielts', 'N/A')}  •  {tuition_text}"
-        tb.Label(card, text=stats, foreground=self._colors.secondary).pack(anchor="w", pady=(0, 10))
+        tuition = university_service.lay_hoc_phi(uni)
+        currency = uni.get("currency", "USD")
+        tuition_text = f"{tuition:,.0f} {currency}" if tuition is not None else "N/A"
+        ielts = university_service.lay_ielts(uni)
+        gpa = uni.get("gpa_min", uni.get("gpa", "N/A"))
+
+        stats = f"GPA {gpa}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
+        stats_lbl = tb.Label(card, text=stats, foreground=self._colors.secondary)
+        stats_lbl.pack(anchor="w", pady=(0, 10))
+
+        # Click vao ten hoac card de xem Detail
+        for widget in (name_lbl, country_lbl, stats_lbl):
+            widget.bind(
+                "<Button-1>",
+                lambda e, u_id=uid: self._controller.show_frame("detail", university_id=u_id)
+            )
 
         action_row = tb.Frame(card, bootstyle="light")
         action_row.pack(fill="x")
 
         tb.Button(
             action_row, text="🗑 Bỏ lưu", style="CardDangerLink.TButton",
-            command=lambda uid=uni["id"]: self._remove(uid)
+            command=lambda u_id=uid: self._remove(u_id)
         ).pack(side="left")
 
-        compare_var = tk.BooleanVar(value=uni["id"] in compare_service.get_compare_ids())
+        compare_var = tk.BooleanVar(value=uid in compare_service.get_compare_ids())
         chk = tb.Checkbutton(
             action_row, text="So sánh", variable=compare_var,
             bootstyle="success-round-toggle",
-            command=lambda uid=uni["id"], var=compare_var: self._toggle_compare(uid, var)
+            command=lambda u_id=uid, var=compare_var: self._toggle_compare(u_id, var)
         )
         chk.pack(side="right")
 
