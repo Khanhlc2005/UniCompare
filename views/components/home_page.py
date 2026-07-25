@@ -1,13 +1,11 @@
-"""Trang chủ (Home) — 3 stat card tổng quan, lối tắt 4 tính năng, trường
-nổi bật. Đúng Frame contract (ARCHITECTURE.md mục 5.1): kế thừa thẳng
-ttk.Frame, constructor (master, controller), có refresh().
+# -*- coding: utf-8 -*-
+"""Trang chủ (Home) — Issue 2.12.
 
-Số liệu stat card (tổng số trường, số quốc gia...) chưa có nguồn thật ở tuần
-1 (chưa có university_service thống kê) nên tạm hiển thị placeholder "—";
-tránh bịa số liệu giả trông như số thật.
-
-Màu chữ navy/teal/xám dùng trực tiếp `tb.Style().colors...` (đọc lại đúng
-bảng màu đã khai báo 1 chỗ ở app_shell.py), không tự định nghĩa hex riêng.
+Nâng cấp HomeView:
+- 3 StatCard với số liệu thật từ repo (tổng số trường, số quốc gia, số ngành học).
+- Lối tắt 4 tính năng chính (Quan tâm, Tìm kiếm, So sánh, Chatbot) điều hướng qua show_frame().
+- Danh sách trường nổi bật dạng card, bấm vào tên/nút/card đều mở đúng DetailView.
+- Đúng Frame contract (ARCHITECTURE.md mục 5.1): refresh() cập nhật số liệu mỗi khi quay lại trang.
 """
 
 import ttkbootstrap as tb
@@ -23,7 +21,7 @@ FEATURES_DATA = [
 
 
 class HomePage(tb.Frame):
-    """Trang chủ — stat card, lối tắt tính năng, trường nổi bật."""
+    """Trang chủ — stat card số liệu thật, lối tắt tính năng, trường nổi bật."""
 
     def __init__(self, master, controller):
         super().__init__(master)
@@ -34,93 +32,210 @@ class HomePage(tb.Frame):
         self._scroll.pack(fill="both", expand=True)
 
         self._build_header()
-        self._build_stats()
+
+        # Frame chứa stats + featured động (re-render khi refresh)
+        self._stats_container = tb.Frame(self._scroll.body)
+        self._stats_container.pack(fill="x", padx=28, pady=(0, 16))
+
         self._build_features()
-        self._build_featured()
+
+        self._featured_container = tb.Frame(self._scroll.body)
+        self._featured_container.pack(fill="x", padx=28, pady=(0, 24))
+
+        # Render ban đầu
+        self._render()
+
+    def refresh(self, **kwargs):
+        """AppShell gọi khi chuyển về trang Home — nạp lại số liệu mới nhất."""
+        self._render()
+
+    def _render(self):
+        """Cập nhật dữ liệu thật cho StatCard và Trường nổi bật."""
+        all_unis = self._controller.repo.get_all()
+
+        self._render_stats(all_unis)
+        self._render_featured(all_unis)
+
+    # ── 1. Header Banner ──────────────────────────────────────────────────
 
     def _build_header(self):
         banner = tb.Frame(self._scroll.body, bootstyle="primary", padding=24)
         banner.pack(fill="x", padx=28, pady=(20, 16))
         tb.Label(
             banner, text="Chào mừng trở lại 👋", bootstyle="inverse-primary",
-            font=("Segoe UI", 18, "bold")
+            font=("Segoe UI", 18, "bold"),
         ).pack(anchor="w")
         tb.Label(
             banner, bootstyle="inverse-primary",
-            text="Khám phá và so sánh các trường đại học trên toàn thế giới.",
+            text="Khám phá và so sánh các trường đại học hàng đầu trên toàn thế giới.",
         ).pack(anchor="w", pady=(4, 0))
 
-    def _build_stats(self):
+    # ── 2. Stat Cards (Số liệu thật) ──────────────────────────────────────
+
+    def _render_stats(self, all_unis: list[dict]):
+        # Clear container cũ
+        for w in self._stats_container.winfo_children():
+            w.destroy()
+
+        total_unis = len(all_unis)
+        countries = {u.get("country") for u in all_unis if u.get("country")}
+        
+        # Đếm tổng số ngành học duy nhất từ seed/mongo
+        all_majors = set()
+        for u in all_unis:
+            m_list = u.get("majors", [])
+            if isinstance(m_list, list):
+                for m in m_list:
+                    if m:
+                        all_majors.add(m)
+
         stats_data = [
-            ("📚", "Tổng số trường", str(len(self._controller.repo.get_all()))),
-            ("🌍", "Quốc gia", str(len({u["country"] for u in self._controller.repo.get_all()}))),
-            ("🔄", "Dữ liệu", "fake_repo"),
+            ("📚", "Tổng số trường", f"{total_unis} trường"),
+            ("🌍", "Quốc gia", f"{len(countries)} quốc gia"),
+            ("🎓", "Số ngành học", f"{len(all_majors)} ngành" if all_majors else "Đang cập nhật"),
         ]
 
-        row = tb.Frame(self._scroll.body)
-        row.pack(fill="x", padx=28, pady=(0, 16))
         for i, (icon, title, value) in enumerate(stats_data):
-            row.columnconfigure(i, weight=1, uniform="stats")
-            card = tb.Frame(row, bootstyle="light", padding=16)
+            self._stats_container.columnconfigure(i, weight=1, uniform="stats")
+            card = tb.Frame(self._stats_container, bootstyle="light", padding=16)
             card.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 8, 0))
-            # icon trai + text phai, canh giua theo chieu doc (dung mockup StatCard)
+            
             card.columnconfigure(1, weight=1)
             tb.Label(card, text=icon, font=("Segoe UI", 20)).grid(
                 row=0, column=0, rowspan=2, sticky="ns", padx=(0, 12)
             )
             tb.Label(
-                card, text=title, foreground=self._colors.secondary, font=("Segoe UI", 8, "bold")
+                card, text=title, foreground=self._colors.secondary,
+                font=("Segoe UI", 9, "bold"),
             ).grid(row=0, column=1, sticky="sw")
             tb.Label(
-                card, text=value, foreground=self._colors.primary, font=("Segoe UI", 16, "bold")
+                card, text=value, foreground=self._colors.primary,
+                font=("Segoe UI", 15, "bold"),
             ).grid(row=1, column=1, sticky="nw")
+
+    # ── 3. Lối tắt tính năng ──────────────────────────────────────────────
 
     def _build_features(self):
         row = tb.Frame(self._scroll.body)
-        row.pack(fill="x", padx=28, pady=(0, 16))
+        row.pack(fill="x", padx=28, pady=(0, 20))
         for i, (icon, title, desc, nav_key) in enumerate(FEATURES_DATA):
             row.columnconfigure(i, weight=1, uniform="features")
-            card = tb.Frame(row, bootstyle="light", padding=16)
+            card = tb.Frame(row, bootstyle="light", padding=16, cursor="hand2")
             card.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 8, 0))
+            
             tb.Label(card, text=icon, font=("Segoe UI", 18)).pack(anchor="w")
             tb.Label(
-                card, text=title, foreground=self._colors.primary, font=("Segoe UI", 11, "bold")
+                card, text=title, foreground=self._colors.primary,
+                font=("Segoe UI", 11, "bold"),
             ).pack(anchor="w", pady=(8, 4))
             tb.Label(
                 card, text=desc, foreground=self._colors.secondary,
-                wraplength=180, justify="left"
+                wraplength=180, justify="left",
             ).pack(anchor="w")
-            tb.Button(
+            
+            btn = tb.Button(
                 card, text="Xem danh sách →", style="CardTealLink.TButton",
-                command=lambda k=nav_key: self._controller.show_frame(k)
-            ).pack(anchor="w", pady=(8, 0))
+                command=lambda k=nav_key: self._controller.show_frame(k),
+            )
+            btn.pack(anchor="w", pady=(12, 0))
 
-    def _build_featured(self):
-        card = tb.Frame(self._scroll.body, bootstyle="light", padding=16)
-        card.pack(fill="x", padx=28, pady=(0, 24))
+            # Bấm vào toàn bộ card cũng chuyển trang
+            card.bind("<Button-1>", lambda e, k=nav_key: self._controller.show_frame(k))
+
+    # ── 4. Trường nổi bật (Cards) ─────────────────────────────────────────
+
+    def _render_featured(self, all_unis: list[dict]):
+        # Clear container cũ
+        for w in self._featured_container.winfo_children():
+            w.destroy()
+
+        header_row = tb.Frame(self._featured_container)
+        header_row.pack(fill="x", pady=(0, 12))
+        
         tb.Label(
-            card, text="🎓 Trường nổi bật", foreground=self._colors.primary,
-            font=("Segoe UI", 12, "bold")
-        ).pack(anchor="w", pady=(0, 8))
+            header_row, text="🎓 Trường nổi bật", foreground=self._colors.primary,
+            font=("Segoe UI", 13, "bold"),
+        ).pack(side="left")
 
-        featured = self._controller.repo.get_all()[:3]
-        if not featured:
-            tb.Label(card, text="Chưa có dữ liệu trường.", foreground=self._colors.secondary).pack(anchor="w")
+        tb.Button(
+            header_row, text="Tất cả trường →", style="CardTealLink.TButton",
+            command=lambda: self._controller.show_frame("search"),
+        ).pack(side="right")
+
+        if not all_unis:
+            empty_card = tb.Frame(self._featured_container, bootstyle="light", padding=20)
+            empty_card.pack(fill="x")
+            tb.Label(
+                empty_card, text="Chưa có dữ liệu trường đại học.",
+                foreground=self._colors.secondary,
+            ).pack(anchor="w")
             return
 
-        for uni in featured:
-            row = tb.Frame(card, bootstyle="light")
-            row.pack(fill="x", pady=4)
-            name_lbl = tb.Label(
-                row, text=uni.get("name", ""), foreground=self._colors.primary, cursor="hand2"
-            )
-            name_lbl.pack(side="left")
-            name_lbl.bind(
-                "<Button-1>",
-                lambda e, uid=uni["id"]: self._controller.show_frame("detail", university_id=uid)
-            )
-            tb.Label(row, text=uni.get("country", ""), foreground=self._colors.secondary).pack(side="right")
+        # Lấy top 4 trường xếp hạng cao nhất (hoặc 4 trường đầu)
+        sorted_unis = sorted(
+            all_unis,
+            key=lambda x: x.get("ranking") if isinstance(x.get("ranking"), (int, float)) else 999
+        )[:4]
 
-    def refresh(self, **kwargs):
-        """Chưa có số liệu động cần nạp lại ở tuần 1, giữ để đúng contract."""
-        pass
+        # Hiển thị dạng grid 2x2
+        cards_grid = tb.Frame(self._featured_container)
+        cards_grid.pack(fill="x")
+        cards_grid.columnconfigure(0, weight=1, uniform="feat_col")
+        cards_grid.columnconfigure(1, weight=1, uniform="feat_col")
+
+        for idx, uni in enumerate(sorted_unis):
+            r = idx // 2
+            c = idx % 2
+            
+            uid = uni.get("id") or str(uni.get("_id", ""))
+            name = uni.get("name", "N/A")
+            country = uni.get("country", "")
+            city = uni.get("city", "")
+            location = f"📍 {city}, {country}" if city else f"📍 {country}"
+            ranking = uni.get("ranking")
+            rank_str = f"#{ranking}" if isinstance(ranking, (int, float)) else ""
+
+            card = tb.Frame(cards_grid, bootstyle="light", padding=16, cursor="hand2")
+            card.grid(row=r, column=c, sticky="nsew", padx=(0 if c == 0 else 6, 6 if c == 0 else 0), pady=6)
+
+            # Header card: Rank tag + Location
+            top_bar = tb.Frame(card, bootstyle="light")
+            top_bar.pack(fill="x")
+            
+            if rank_str:
+                tb.Label(
+                    top_bar, text=rank_str, foreground=self._colors.primary,
+                    font=("Segoe UI", 10, "bold"), bootstyle="secondary",
+                ).pack(side="left")
+
+            tb.Label(
+                top_bar, text=location, foreground=self._colors.secondary,
+                font=("Segoe UI", 9),
+            ).pack(side="right")
+
+            # Tên trường
+            name_lbl = tb.Label(
+                card, text=name, foreground=self._colors.primary,
+                font=("Segoe UI", 11, "bold"), wraplength=260, justify="left",
+                cursor="hand2",
+            )
+            name_lbl.pack(anchor="w", pady=(8, 12))
+
+            # Action button
+            btn_frame = tb.Frame(card, bootstyle="light")
+            btn_frame.pack(fill="x")
+            
+            detail_btn = tb.Button(
+                btn_frame, text="Xem chi tiết →", style="CardTealLink.TButton",
+                command=lambda u_id=uid: self._open_detail(u_id),
+            )
+            detail_btn.pack(side="left")
+
+            # Bind click cho toàn bộ card
+            card.bind("<Button-1>", lambda e, u_id=uid: self._open_detail(u_id))
+            name_lbl.bind("<Button-1>", lambda e, u_id=uid: self._open_detail(u_id))
+
+    def _open_detail(self, university_id: str):
+        """Mở trang chi tiết cho trường được chọn."""
+        if university_id:
+            self._controller.show_frame("detail", university_id=university_id)
