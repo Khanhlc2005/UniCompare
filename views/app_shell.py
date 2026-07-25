@@ -99,6 +99,9 @@ class AppShell(tb.Window):
         container.columnconfigure(0, weight=1)
         container.rowconfigure(0, weight=1)
 
+        self._current_frame_name = None
+        self._nav_stack = []
+
         self._frames = {}
         for key, spec in FRAME_SPECS.items():
             if isinstance(spec, tuple):
@@ -123,13 +126,28 @@ class AppShell(tb.Window):
     def _open_admin(self):
         open_admin_window(self, self.repo)
 
-    def show_frame(self, name, **kwargs):
+    def show_frame(self, name, is_back=False, **kwargs):
         """Controller API dùng chung cho mọi View: chuyển sang frame `name`,
         gọi refresh(**kwargs) trước khi đưa lên để dữ liệu luôn mới."""
         frame = self._frames.get(name)
         if frame is None:
             return
+
+        if not is_back:
+            if self._current_frame_name and self._current_frame_name != name:
+                self._nav_stack.append(self._current_frame_name)
+
+        self._current_frame_name = name
+
         if hasattr(frame, "refresh"):
             frame.refresh(**kwargs)
         frame.tkraise()
         self._sidebar.set_active(name)
+
+    def go_back(self, fallback="home"):
+        """Quay lại màn hình trước đó trong Navigation Stack."""
+        if self._nav_stack:
+            prev_name = self._nav_stack.pop()
+        else:
+            prev_name = fallback
+        self.show_frame(prev_name, is_back=True)
