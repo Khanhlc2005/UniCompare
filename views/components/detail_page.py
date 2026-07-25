@@ -46,7 +46,7 @@ class DetailPage(tb.Frame):
 
         tb.Button(
             self._banner, text="← Quay lại", style="BannerLink.TButton",
-            command=lambda: self._controller.show_frame("home"),
+            command=self._on_back,
         ).pack(anchor="w")
 
         self._name_lbl = tb.Label(
@@ -92,6 +92,13 @@ class DetailPage(tb.Frame):
             all_unis = self._controller.repo.get_all()
             self._data = all_unis[0] if all_unis else {}
         self._render()
+
+    def _on_back(self):
+        """Quay lại màn hình trước đó trong navigation stack."""
+        if hasattr(self._controller, "go_back"):
+            self._controller.go_back()
+        else:
+            self._controller.show_frame("home")
 
     # ─── Helpers ─────────────────────────────────────────────────────────
 
