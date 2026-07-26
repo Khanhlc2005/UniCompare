@@ -235,6 +235,15 @@ class MongoUniversityRepository:
                 f"Không thể xóa trường có id={university_id!r}."
             ) from exc
 
+    def get_database(self) -> Database:
+        """Tra ve Database dang dung (ket noi neu chua ket noi).
+
+        Dung de cac repo khac (VD ai_cache_repo) xai chung 1 MongoClient
+        thay vi tu mo connection rieng toi cung Atlas cluster.
+        """
+        self._connect()
+        return self._database
+
     def close(self) -> None:
         """Đóng MongoClient an toàn."""
         if self._client is not None:
