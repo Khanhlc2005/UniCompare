@@ -1,13 +1,24 @@
-"""recommend_service.py — L1 rule engine cho chatbot goi y truong (Issue 3.5).
+"""recommend_service.py — L1 rule engine + noi L2 cache cho chatbot goi y truong.
 
-Cong thuc/trong so lay DUNG theo docs/cong_thuc_diem_rule_based.md (Issue 2.10,
-nhom da review) - KHONG tu doi trong so/tieu chi o day. Xem file do de biet ly do
-chon trong so va cac case bien da chot.
+Cong thuc/trong so (score/score_all, Issue 3.5) lay DUNG theo
+docs/cong_thuc_diem_rule_based.md (Issue 2.10, nhom da review) - KHONG tu doi
+trong so/tieu chi o day. Xem file do de biet ly do chon trong so va cac case
+bien da chot. score_all() nhan san list universities (da lay tu
+repo.get_all()/search() o noi goi ham), khong tu query Mongo trong nay.
 
-Luu y: day la L1 - thuan Python, khong duoc import requests/AI SDK/ai_cache_repo o
-file nay (do la L2, Issue 3.1/3.8). score_all() nhan san list universities (da lay
-tu repo.get_all()/search() o noi goi ham), khong tu query Mongo trong nay.
+profile_hash()/get_explanation() (Issue 3.1) noi L1 voi ai_cache_repo - CHUA
+goi AI that (do la Issue 3.8 cua Nam Anh, can API_KEY/SDK), chi chua san diem
+noi _goi_ai_that() va logic cache. Khong import requests/AI SDK o day.
 """
+
+import hashlib
+import json
+
+from pymongo.errors import PyMongoError
+
+import config
+from repositories import ai_cache_repo
+from repositories.mongo_repo import MongoRepositoryError
 
 # Ty gia tham khao luc viet tai lieu 2.10 (25/07/2026) - hard-code vi L1 khong duoc
 # goi mang. Currency nao khong co trong bang nay coi nhu thieu du lieu hoc phi (bo C3).
@@ -179,3 +190,65 @@ def score_all(profile: dict, universities: list[dict], top_n: int = 5) -> list[d
     ]
     ket_qua.sort(key=lambda item: item["score"], reverse=True)
     return ket_qua[:top_n]
+
+
+def profile_hash(profile: dict) -> str:
+    """Hash sha256 cua 1 ho so, dung lam key cache trong ai_cache.
+
+    sort_keys=True de cung 1 profile (du dict duoc tao theo thu tu key khac
+    nhau) luon ra dung 1 chuoi -> dung 1 hash, khong bi cache trung ho so.
+    """
+    chuoi_on_dinh = json.dumps(profile, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(chuoi_on_dinh.encode("utf-8")).hexdigest()
+
+
+def _goi_ai_that(profile: dict, top_n_results: list[dict]) -> list[dict]:
+    """Diem noi cho Issue 3.8 (Nam Anh) - se thay ham nay bang logic goi AI
+    API that (dung config.API_KEY) de sinh explanation cho tung truong trong
+    top_n_results. Scope Issue 3.1 chua co SDK AI nen tam raise o day, KHONG
+    tu che fake explanation cho co."""
+    raise NotImplementedError(
+        "Chua noi AI that (Issue 3.8) - can config.API_KEY + SDK AI de sinh "
+        "explanation. get_explanation() da san sang goi ham nay va tu cache "
+        "lai ket qua ngay khi co."
+    )
+
+
+def get_explanation(profile: dict, top_n_results: list[dict]) -> list[dict] | None:
+    """L2 - lay explanation da cache, chua co thi moi goi AI that (dang cho Issue 3.8).
+
+    top_n_results la ket qua co san tu score_all() - ham nay KHONG tu goi lai
+    score_all, 2 viec cham diem (L1) va giai thich (L2) tach rieng, tang tren
+    tu quyet dinh khi nao can goi.
+
+    Bat cu loi Mongo/AI nao (thieu MONGO_URI, mat mang, chua noi AI, het
+    quota...) deu tra ve None thay vi raise - dung tinh than fallback L1 da
+    chot o ARCHITECTURE.md muc 6 ("L2 loi thi hien lai ket qua L1, khong kem
+    explanation, app khong duoc crash").
+    """
+    if not config.has_mongo():
+        return None  # khong co Mongo thi khong cache duoc, L2 tam bo qua
+
+    ma_hash = profile_hash(profile)
+
+    try:
+        da_cache = ai_cache_repo.get_cached_result(ma_hash)
+    except (MongoRepositoryError, PyMongoError):
+        return None  # loi ket noi Mongo giua chung
+
+    if da_cache is not None:
+        return da_cache  # co cache roi -> tra luon, khong goi AI
+
+    try:
+        ket_qua_ai = _goi_ai_that(profile, top_n_results)
+    except NotImplementedError:
+        return None  # Issue 3.8 chua noi AI that
+    except Exception:
+        return None  # AI loi mang/het quota -> fallback L1, khong crash app
+
+    try:
+        ai_cache_repo.save_result(ma_hash, ket_qua_ai)
+    except (MongoRepositoryError, PyMongoError):
+        pass  # luu cache that bai cung khong sao, van co ket qua de tra ve
+
+    return ket_qua_ai
