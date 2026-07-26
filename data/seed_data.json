@@ -22,7 +22,8 @@
     "tuition_detail": "Hoc phi dao dong theo nganh: ~26.000-40.000 CNY/nam bac cu nhan; mot so chuong trinh sau dai hoc day bang tieng Anh len toi 50.000 CNY/nam. Phi ung tuyen 800 CNY.",
     "website": "https://isd.pku.edu.cn/en/",
     "email": "",
-    "verified": "mot phan (IELTS/TOEFL/deadline co nguon; hoc phi la khoang uoc tinh)"
+    "verified": "mot phan (IELTS/TOEFL/deadline co nguon; hoc phi la khoang uoc tinh)",
+    "tuition_vnd": 116970000
   },
   {
     "id": "tsinghua-university",
@@ -47,7 +48,8 @@
     "tuition_detail": "Hoc phi ~26.000-40.000 CNY/nam bac cu nhan tuy nganh; mot so chuong trinh tien si day bang tieng Anh len toi 50.000 CNY/nam.",
     "website": "https://www.tsinghua.edu.cn/en/",
     "email": "",
-    "verified": "mot phan (IELTS/TOEFL co nguon; deadline chua xac dinh, hoc phi la khoang uoc tinh)"
+    "verified": "mot phan (IELTS/TOEFL co nguon; deadline chua xac dinh, hoc phi la khoang uoc tinh)",
+    "tuition_vnd": 116970000
   },
   {
     "id": "fudan-university",
@@ -72,7 +74,8 @@
     "tuition_detail": "Hoc phi ~50.000-70.000 CNY/nam tuy chuong trinh.",
     "website": "https://www.fudan.edu.cn/en/",
     "email": "",
-    "verified": "co (IELTS/TOEFL/GPA co nguon ro rang tu trang admissions)"
+    "verified": "co (IELTS/TOEFL/GPA co nguon ro rang tu trang admissions)",
+    "tuition_vnd": 233940000
   },
   {
     "id": "shanghai-jiao-tong-university",
@@ -97,7 +100,8 @@
     "tuition_detail": "Hoc phi tieu chuan 24.800 CNY/nam (rieng Global Institute of Future Technology: 120.000 CNY/nam); phi ho so 800 CNY.",
     "website": "https://en.sjtu.edu.cn/",
     "email": "",
-    "verified": "co (IELTS/TOEFL/hoc phi co nguon tu global.sjtu.edu.cn; ranking la uoc tinh, can xac nhan lai)"
+    "verified": "co (IELTS/TOEFL/hoc phi co nguon tu global.sjtu.edu.cn; ranking la uoc tinh, can xac nhan lai)",
+    "tuition_vnd": 96695000
   },
   {
     "id": "zhejiang-university",
@@ -122,7 +126,8 @@
     "tuition_detail": "Hoc phi ~30.800 CNY/nam (Van hoc/Giao duc) den 42.800 CNY/nam (Quan ly/Khoa hoc/Ky thuat); rieng Luat va MBA cao hon nhieu (150.000-300.000 CNY/nam).",
     "website": "https://www.zju.edu.cn/english/",
     "email": "",
-    "verified": "co (IELTS/TOEFL/hoc phi co nguon tu zje.zju.edu.cn va besteduchina; ranking la uoc tinh)"
+    "verified": "co (IELTS/TOEFL/hoc phi co nguon tu zje.zju.edu.cn va besteduchina; ranking la uoc tinh)",
+    "tuition_vnd": 143483000
   },
   {
     "id": "nanjing-university",
@@ -147,7 +152,8 @@
     "tuition_detail": "Hoc phi bac cu nhan ~21.000-24.000 CNY/nam; bac thac si ~25.000-45.000 CNY/nam tuy nganh.",
     "website": "https://en.nju.edu.cn/",
     "email": "",
-    "verified": "co (IELTS/TOEFL co nguon; ranking 2026 tu British Council; hoc phi la khoang)"
+    "verified": "co (IELTS/TOEFL co nguon; ranking 2026 tu British Council; hoc phi la khoang)",
+    "tuition_vnd": 93576000
   },
   {
     "id": "university-science-technology-china",
@@ -172,7 +178,8 @@
     "tuition_detail": "Hoc phi ~26.000 CNY/nam (cu nhan); thac si 30.000 CNY/nam; tien si 35.000 CNY/nam.",
     "website": "https://en.ustc.edu.cn/",
     "email": "",
-    "verified": "co (hoc phi/hoc bong co nguon tu ic.ustc.edu.cn; ranking 2025, can cap nhat 2026)"
+    "verified": "co (hoc phi/hoc bong co nguon tu ic.ustc.edu.cn; ranking 2025, can cap nhat 2026)",
+    "tuition_vnd": 101374000
   },
   {
     "id": "university-tokyo",
@@ -197,7 +204,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc mot lan 282.000 JPY. Co the duoc mien 50-100% neu chung minh kho khan tai chinh.",
     "website": "https://www.u-tokyo.ac.jp/en/",
     "email": "",
-    "verified": "co (hoc phi/IELTS/TOEFL co nguon tu u-tokyo.ac.jp)"
+    "verified": "co (hoc phi/IELTS/TOEFL co nguon tu u-tokyo.ac.jp)",
+    "tuition_vnd": 85894000
   },
   {
     "id": "kyoto-university",
@@ -222,7 +230,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc 282.000 JPY (giong cac dai hoc quoc gia khac).",
     "website": "https://www.kyoto-u.ac.jp/en",
     "email": "",
-    "verified": "co (IELTS/TOEFL/GPA co nguon; ranking la khoang uoc tinh, CAN XAC NHAN lai tren topuniversities.com)"
+    "verified": "co (IELTS/TOEFL/GPA co nguon; ranking la khoang uoc tinh, CAN XAC NHAN lai tren topuniversities.com)",
+    "tuition_vnd": 85894000
   },
   {
     "id": "osaka-university",
@@ -247,7 +256,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc 282.000 JPY.",
     "website": "https://www.osaka-u.ac.jp/en",
     "email": "",
-    "verified": "CHUA XAC MINH rieng - dung theo chuan hoc phi dai hoc quoc gia Nhat Ban, IELTS/TOEFL la khoang tham khao chung, ranking can kiem tra lai"
+    "verified": "CHUA XAC MINH rieng - dung theo chuan hoc phi dai hoc quoc gia Nhat Ban, IELTS/TOEFL la khoang tham khao chung, ranking can kiem tra lai",
+    "tuition_vnd": 85894000
   },
   {
     "id": "institute-science-tokyo",
@@ -272,7 +282,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc 282.000 JPY.",
     "website": "https://www.isct.ac.jp/en",
     "email": "",
-    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)"
+    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)",
+    "tuition_vnd": 85894000
   },
   {
     "id": "tohoku-university",
@@ -297,7 +308,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc 282.000 JPY.",
     "website": "https://www.tohoku.ac.jp/en/",
     "email": "",
-    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)"
+    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)",
+    "tuition_vnd": 85894000
   },
   {
     "id": "nagoya-university",
@@ -322,7 +334,8 @@
     "tuition_detail": "Hoc phi chuan quoc gia 535.800 JPY/nam + phi nhap hoc 282.000 JPY.",
     "website": "https://www.nagoya-u.ac.jp/en/",
     "email": "",
-    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)"
+    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)",
+    "tuition_vnd": 85894000
   },
   {
     "id": "keio-university",
@@ -347,7 +360,8 @@
     "tuition_detail": "Hoc phi bac cu nhan ~1.000.000-1.400.000 JPY/nam tuy khoa (truong tu thuc nen cao hon dai hoc quoc gia).",
     "website": "https://www.keio.ac.jp/en/",
     "email": "",
-    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)"
+    "verified": "co (ranking lay tu Times Higher Education World Rankings 2026, khong phai QS - vi khong tim thay so QS rieng le trong thoi gian cho phep; cac field khac giu nguyen ghi chu truoc do)",
+    "tuition_vnd": 192372000
   },
   {
     "id": "seoul-national-university",
@@ -372,7 +386,8 @@
     "tuition_detail": "Hoc phi ~3.278.000-3.997.000 KRW/hoc ky (Nhan van/Ky thuat), Y khoa lam sang cao nhat ~6.131.000 KRW/hoc ky - tuong duong khoang 6,5-8 trieu KRW/nam.",
     "website": "https://en.snu.ac.kr/",
     "email": "",
-    "verified": "co (IELTS/TOEFL/hoc phi/hoc bong co nguon tu en.snu.ac.kr)"
+    "verified": "co (IELTS/TOEFL/hoc phi/hoc bong co nguon tu en.snu.ac.kr)",
+    "tuition_vnd": 125720000
   },
   {
     "id": "kaist",
@@ -397,7 +412,8 @@
     "tuition_detail": "Hoc phi danh nghia thap, thuc te gan nhu toan bo sinh vien quoc te duoc KAIST Scholarship mien hoc phi + tro cap 350.000 KRW/thang (cu nhan/thac si) hoac 400.000 KRW/thang (tien si).",
     "website": "https://www.kaist.ac.kr/en/",
     "email": "",
-    "verified": "co (hoc bong/IELTS/TOEFL/deadline co nguon; tuition_per_year la con so danh nghia tham khao, thuc te da so duoc mien)"
+    "verified": "co (hoc bong/IELTS/TOEFL/deadline co nguon; tuition_per_year la con so danh nghia tham khao, thuc te da so duoc mien)",
+    "tuition_vnd": 71840000
   },
   {
     "id": "university-of-oxford",
@@ -422,7 +438,8 @@
     "tuition_detail": "Hoc phi quoc te (Overseas fee) 2026/27 dao dong 37.380-62.820 GBP/nam tuy nganh (Y khoa lam sang cao nhat).",
     "website": "https://www.ox.ac.uk/admissions",
     "email": "",
-    "verified": "co (nguon: undergraduate.study.cam.ac.uk phong ngua nham voi Cambridge; oxford fee tu uniadmissions.co.uk, IELTS tu college-council.com - 2026)"
+    "verified": "co (nguon: undergraduate.study.cam.ac.uk phong ngua nham voi Cambridge; oxford fee tu uniadmissions.co.uk, IELTS tu college-council.com - 2026)",
+    "tuition_vnd": 1574265000
   },
   {
     "id": "university-of-cambridge",
@@ -447,7 +464,8 @@
     "tuition_detail": "Hoc phi quoc te (Overseas fee) 2026/27 dao dong 29.052-70.554 GBP/nam tuy nganh, chua tinh college fee.",
     "website": "https://www.undergraduate.study.cam.ac.uk/international-students",
     "email": "",
-    "verified": "co (nguon: undergraduate.study.cam.ac.uk, 2026/27 fee chinh thuc)"
+    "verified": "co (nguon: undergraduate.study.cam.ac.uk, 2026/27 fee chinh thuc)",
+    "tuition_vnd": 1574265000
   },
   {
     "id": "imperial-college-london",
@@ -472,7 +490,8 @@
     "tuition_detail": "Hoc phi quoc te uoc tinh 30.000-45.000 GBP/nam tuy nganh (Ky thuat/Y khoa o muc cao).",
     "website": "https://www.imperial.ac.uk/study/",
     "email": "",
-    "verified": "mot phan (IELTS/TOEFL co nguon chung tu college-council.com; hoc phi la khoang uoc tinh tu dai AECC/leapscholar, can xac nhan tren trang truong)"
+    "verified": "mot phan (IELTS/TOEFL co nguon chung tu college-council.com; hoc phi la khoang uoc tinh tu dai AECC/leapscholar, can xac nhan tren trang truong)",
+    "tuition_vnd": 1329379000
   },
   {
     "id": "university-college-london",
@@ -497,7 +516,8 @@
     "tuition_detail": "Hoc phi quoc te uoc tinh 25.000-38.000 GBP/nam tuy nganh.",
     "website": "https://www.ucl.ac.uk/prospective-students/",
     "email": "",
-    "verified": "mot phan (IELTS co nguon ro tu tutopiya.com; hoc phi/deadline la khoang uoc tinh chung cua UK, can xac nhan tren trang UCL)"
+    "verified": "mot phan (IELTS co nguon ro tu tutopiya.com; hoc phi/deadline la khoang uoc tinh chung cua UK, can xac nhan tren trang UCL)",
+    "tuition_vnd": 1119477000
   },
   {
     "id": "university-of-edinburgh",
@@ -522,7 +542,8 @@
     "tuition_detail": "Hoc phi quoc te thuoc khoang 15.000-30.000 GBP/nam tuy nganh (theo AECC 2026).",
     "website": "https://www.ed.ac.uk/studying/international",
     "email": "",
-    "verified": "mot phan (khoang hoc phi tu aeccglobal.com, IELTS tu nguon tong hop, can xac nhan tren trang Edinburgh)"
+    "verified": "mot phan (khoang hoc phi tu aeccglobal.com, IELTS tu nguon tong hop, can xac nhan tren trang Edinburgh)",
+    "tuition_vnd": 1049510000
   },
   {
     "id": "university-of-manchester",
@@ -547,6 +568,7 @@
     "tuition_detail": "Hoc phi quoc te thuoc khoang 18.000-45.000 GBP/nam tuy nganh, thap hon mat bang London.",
     "website": "https://www.manchester.ac.uk/study/international/",
     "email": "",
-    "verified": "mot phan (khoang hoc phi/IELTS tu nguon tong hop leapscholar/college-council 2026, can xac nhan tren trang Manchester)"
+    "verified": "mot phan (khoang hoc phi/IELTS tu nguon tong hop leapscholar/college-council 2026, can xac nhan tren trang Manchester)",
+    "tuition_vnd": 979542000
   }
 ]
