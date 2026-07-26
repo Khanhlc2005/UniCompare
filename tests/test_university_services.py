@@ -95,12 +95,13 @@ def test_loc_theo_ielts_toi_da(repo):
     assert len(ket_qua) > 0
 
 
-def test_ket_hop_nhieu_dieu_kien_cung_luc(repo):
-    ket_qua = university_service.search(repo, country="Singapore", tuition_max=25000)
+def test_ket_hop_ca_3_dieu_kien_pill_cung_luc(repo):
+    ket_qua = university_service.search(repo, country="UK", tuition_max=40000, ielts_max=7.5)
     assert all(
-        uni["country"] == "Singapore" and uni["tuition"] <= 25000
+        uni["country"] == "UK" and uni["tuition"] <= 40000 and uni["ielts"] <= 7.5
         for uni in ket_qua
     )
+    assert len(ket_qua) > 0
 
 
 def test_get_countries_tra_ve_danh_sach_khong_trung(repo):
@@ -156,3 +157,34 @@ def test_loc_hoc_phi_loai_truong_thieu_du_lieu_thay_vi_am_tham_cho_qua():
     ])
     ket_qua = university_service.search(repo_chuan, tuition_max=100)
     assert ket_qua == []
+# ─── Phân trang cho SearchView (Issue 2.6) ──────────────────────
+def test_phan_trang_it_hon_1_trang_tra_ve_tat_ca():
+    ket_qua, trang, tong = university_service.phan_trang(list(range(5)), page=1, page_size=9)
+    assert ket_qua == list(range(5))
+    assert trang == tong == 1
+
+
+def test_phan_trang_cat_dung_trang_2():
+    du_lieu = list(range(20))
+    ket_qua, trang, tong = university_service.phan_trang(du_lieu, page=2, page_size=9)
+    assert ket_qua == du_lieu[9:18]
+    assert (trang, tong) == (2, 3)
+
+
+def test_phan_trang_trang_cuoi_thieu_phan_tu():
+    du_lieu = list(range(20))
+    ket_qua, _, _ = university_service.phan_trang(du_lieu, page=3, page_size=9)
+    assert ket_qua == du_lieu[18:20]
+
+
+def test_phan_trang_page_vuot_qua_tong_trang_bi_clamp_ve_cuoi():
+    du_lieu = list(range(20))
+    ket_qua, trang, tong = university_service.phan_trang(du_lieu, page=99, page_size=9)
+    assert (trang, tong) == (3, 3)
+    assert ket_qua == du_lieu[18:20]
+
+
+def test_phan_trang_ket_qua_rong():
+    ket_qua, trang, tong = university_service.phan_trang([], page=1, page_size=9)
+    assert ket_qua == []
+    assert trang == tong == 1

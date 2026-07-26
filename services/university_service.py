@@ -15,7 +15,7 @@ dung "tuition_per_year"/"ielts_min". lay_hoc_phi()/lay_ielts() ben duoi doc ca
 duoc filter <=, coi nhu filter khong co tac dung gi).
 """
 import unicodedata
-
+import math
 
 def lay_hoc_phi(uni: dict) -> float | None:
     """Doc hoc phi/nam, uu tien field chuan tuition_per_year, fallback ve
@@ -99,3 +99,22 @@ def get_countries(repo) -> list[str]:
     """
     countries = {uni.get("country", "") for uni in repo.get_all() if uni.get("country")}
     return sorted(countries)
+def phan_trang(
+    results: list[dict], page: int, page_size: int
+) -> tuple[list[dict], int, int]:
+    """Cắt danh sách kết quả (đã lọc xong) theo trang, dùng cho SearchView (Issue 2.6).
+
+    Trả về (kết_quả_của_trang, trang_hiện_tại_sau_khi_clamp, tổng_số_trang).
+    page bị clamp về [1, tổng_trang] để tránh trang rỗng khi filter đổi làm
+    ít kết quả hơn trang đang xem (VD đang ở trang 3 rồi gõ thêm từ khóa
+    chỉ còn 1 trang).
+    """
+    if not results:
+        return [], 1, 1
+    tong_trang = math.ceil(len(results) / page_size)
+    trang = min(max(page, 1), tong_trang)
+    start = (trang - 1) * page_size
+    return results[start:start + page_size], trang, tong_trang
+
+
+
