@@ -29,9 +29,9 @@ from views.components.compare_bar import CompareBar
 
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
-    ("< $25,000", 25000),
-    ("< $40,000", 40000),
-    ("< $55,000", 55000),
+    ("≤ $25,000", 25000),
+    ("≤ $40,000", 40000),
+    ("≤ $55,000", 55000),
 ]
 
 # (nhãn hiển thị, ielts_max)
