@@ -29,9 +29,9 @@ from views.components.compare_bar import CompareBar
 
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
-    ("< $25,000", 25000),
-    ("< $40,000", 40000),
-    ("< $55,000", 55000),
+    ("≤ $25,000", 25000),
+    ("≤ $40,000", 40000),
+    ("≤ $55,000", 55000),
 ]
 
 # (nhãn hiển thị, ielts_max)
@@ -40,7 +40,8 @@ IELTS_PILLS = [
     ("≤ 7.0", 7.0),
     ("≤ 7.5", 7.5),
 ]
-
+# so ket qua/trang - khop luoi 3 cot san co (3 hang/trang)
+PAGE_SIZE = 9
 
 class SearchPage(tb.Frame):
     """Trang Tìm kiếm — search bar + 3 nhóm pill filter + card grid."""
@@ -54,11 +55,10 @@ class SearchPage(tb.Frame):
         self._active_country = None
         self._active_tuition_label = None
         self._active_ielts_label = None
-
+        self._page = 1  # trang hien tai (Issue 2.6), reset ve 1 moi khi doi filter/keyword
         self._keyword_var = tk.StringVar()
         # go phim -> loc lai ngay (khong can nut "Tim"), dung cho UX pill filter
-        self._keyword_var.trace_add("write", lambda *_: self._render())
-
+        self._keyword_var.trace_add("write", lambda *_: self._on_filters_changed())
         self._scroll = ScrollableFrame(self)
         self._scroll.pack(fill="both", expand=True)
 
@@ -121,15 +121,23 @@ class SearchPage(tb.Frame):
             self._build_empty_state()
             return
 
+        # Issue 2.6: chi ve 1 trang, khong ve het toan bo results cung luc
+        page_results, self._page, total_pages = university_service.phan_trang(
+            results, self._page, PAGE_SIZE
+        )
+
         grid = tb.Frame(self._results_holder)
         grid.pack(fill="both", expand=True)
         cols = 3
         for i in range(cols):
             grid.columnconfigure(i, weight=1, uniform="search")
 
-        for idx, uni in enumerate(results):
+        for idx, uni in enumerate(page_results):
             card = self._build_card(grid, uni)
             card.grid(row=idx // cols, column=idx % cols, sticky="nsew", padx=6, pady=6)
+
+        if total_pages > 1:
+            self._build_pagination(total_pages)
 
     def _build_compare_bar(self):
         """Issue 2.9: doc chung compare_service voi Watchlist - CompareBar tu
@@ -217,14 +225,49 @@ class SearchPage(tb.Frame):
             return
         self._render()
 
+    def _build_pagination(self, total_pages):
+        bar = tb.Frame(self._results_holder)
+        bar.pack(fill="x", pady=(12, 0))
+
+        tb.Button(
+            bar, text="‹ Trước", bootstyle="secondary-outline",
+            command=self._prev_page,
+            state="normal" if self._page > 1 else "disabled",
+        ).pack(side="left")
+
+        tb.Label(
+            bar, text=f"Trang {self._page}/{total_pages}",
+            foreground=self._colors.secondary,
+        ).pack(side="left", padx=12)
+
+        tb.Button(
+            bar, text="Sau ›", bootstyle="secondary-outline",
+            command=self._next_page,
+            state="normal" if self._page < total_pages else "disabled",
+        ).pack(side="left")
+
+    def _prev_page(self):
+        self._page -= 1
+        self._render()
+
+    def _next_page(self):
+        self._page += 1
+        self._render()
+
+    def _on_filters_changed(self):
+        """Goi lai moi khi doi keyword/pill - reset ve trang 1 vi ket qua moi
+        co the it hon trang dang xem (Issue 2.6)."""
+        self._page = 1
+        self._render()
+
     def _on_country_select(self, value):
         self._active_country = value
-        self._render()
+        self._on_filters_changed()
 
     def _on_tuition_select(self, value):
         self._active_tuition_label = value
-        self._render()
+        self._on_filters_changed()
 
     def _on_ielts_select(self, value):
         self._active_ielts_label = value
-        self._render()
+        self._on_filters_changed()
