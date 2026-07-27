@@ -71,10 +71,10 @@ class AdminView(ttk.Frame):
     # ------------------------------------------------------------------
     def _configure_style(self) -> None:
         style = ttk.Style(self)
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
+        # try:
+        #     style.theme_use("clam")
+        # except tk.TclError:
+        #     pass
 
         style.configure("Admin.TFrame", background="#F5F7FB")
         style.configure(
