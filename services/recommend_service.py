@@ -13,6 +13,10 @@ noi _goi_ai_that() va logic cache. Khong import requests/AI SDK o day.
 
 import hashlib
 import json
+import os
+import re
+import urllib.error
+import urllib.request
 
 from pymongo.errors import PyMongoError
 
@@ -202,53 +206,159 @@ def profile_hash(profile: dict) -> str:
     return hashlib.sha256(chuoi_on_dinh.encode("utf-8")).hexdigest()
 
 
-def _goi_ai_that(profile: dict, top_n_results: list[dict]) -> list[dict]:
-    """Diem noi cho Issue 3.8 (Nam Anh) - se thay ham nay bang logic goi AI
-    API that (dung config.API_KEY) de sinh explanation cho tung truong trong
-    top_n_results. Scope Issue 3.1 chua co SDK AI nen tam raise o day, KHONG
-    tu che fake explanation cho co."""
-    raise NotImplementedError(
-        "Chua noi AI that (Issue 3.8) - can config.API_KEY + SDK AI de sinh "
-        "explanation. get_explanation() da san sang goi ham nay va tu cache "
-        "lai ket qua ngay khi co."
+def _goi_ai_that(profile: dict, top_n_results: list[dict]) -> list[dict] | None:
+    """Gọi AI API (Google Gemini / OpenAI) để sinh lời giải thích ngắn cho top N kết quả.
+
+    Tự động thử các model khả dụng (gemini-flash-latest, gemini-2.0-flash...) và fallback
+    an toàn (trả về None) nếu:
+    - Không có API_KEY / GEMINI_API_KEY trong .env / config
+    - Mất kết nối mạng / timeout
+    - Hết quota / API error (HTTP 429, 401, 500)
+    """
+    api_key = config.API_KEY or os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    prompt_data = {
+        "profile": profile,
+        "top_universities": top_n_results,
+    }
+
+    prompt = (
+        "Bạn là chuyên gia tư vấn du học của UniCompare. "
+        "Dựa vào hồ sơ học sinh và danh sách Top trường đại học dưới đây:\n"
+        f"{json.dumps(prompt_data, ensure_ascii=False)}\n\n"
+        "Hãy viết 1-2 câu ngắn gọn giải thích lý do trường đó phù hợp (hoặc chưa phù hợp) "
+        "với hồ sơ. Trả về đúng 1 JSON array dạng: "
+        '[{"university_id": "...", "score": 85, "explanation": "Lời giải thích ngắn 1-2 câu..."}, ...]'
     )
+
+    models_to_try = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-pro-latest", "gemma-4-26b-a4b-it"]
+
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.3
+            }
+        }).encode("utf-8")
+
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                raw_body = resp.read().decode("utf-8")
+                data = json.loads(raw_body)
+                content_text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+                json_match = re.search(r"\[.*\]", content_text, re.DOTALL)
+                raw_json = json_match.group(0) if json_match else content_text
+                parsed_list = json.loads(raw_json)
+
+                if isinstance(parsed_list, list) and len(parsed_list) > 0:
+                    explanation_map = {
+                        str(item.get("university_id")): item.get("explanation", "")
+                        for item in parsed_list if isinstance(item, dict)
+                    }
+
+                    output = []
+                    for item in top_n_results:
+                        uid = str(item.get("university_id"))
+                        item_copy = dict(item)
+                        item_copy["explanation"] = explanation_map.get(
+                            uid, f"Điểm phù hợp {item.get('score')}% dựa trên tiêu chí GPA, IELTS và ngân sách."
+                        )
+                        output.append(item_copy)
+                    return output
+        except Exception:
+            continue
+
+    return None
 
 
 def get_explanation(profile: dict, top_n_results: list[dict]) -> list[dict] | None:
-    """L2 - lay explanation da cache, chua co thi moi goi AI that (dang cho Issue 3.8).
+    """L2 - lấy explanation đã cache, chưa có thì mới gọi AI thật (Issue 3.8 / #52).
 
-    top_n_results la ket qua co san tu score_all() - ham nay KHONG tu goi lai
-    score_all, 2 viec cham diem (L1) va giai thich (L2) tach rieng, tang tren
-    tu quyet dinh khi nao can goi.
-
-    Bat cu loi Mongo/AI nao (thieu MONGO_URI, mat mang, chua noi AI, het
-    quota...) deu tra ve None thay vi raise - dung tinh than fallback L1 da
-    chot o ARCHITECTURE.md muc 6 ("L2 loi thi hien lai ket qua L1, khong kem
-    explanation, app khong duoc crash").
+    Bất cứ lỗi Mongo/AI nào (thiếu MONGO_URI, mất mạng, chưa có key, hết quota...)
+    đều trả về None thay vì raise - đúng tinh thần fallback L1 ở ARCHITECTURE.md mục 6.
     """
-    if not config.has_mongo():
-        return None  # khong co Mongo thi khong cache duoc, L2 tam bo qua
-
     ma_hash = profile_hash(profile)
 
-    try:
-        da_cache = ai_cache_repo.get_cached_result(ma_hash)
-    except (MongoRepositoryError, PyMongoError):
-        return None  # loi ket noi Mongo giua chung
+    # 1. Thử lấy từ Mongo Cache (nếu có Mongo)
+    if config.has_mongo():
+        try:
+            da_cache = ai_cache_repo.get_cached_result(ma_hash)
+            if da_cache is not None:
+                return da_cache  # Có cache -> trả về ngay, không gọi AI
+        except (MongoRepositoryError, PyMongoError):
+            pass
 
-    if da_cache is not None:
-        return da_cache  # co cache roi -> tra luon, khong goi AI
-
+    # 2. Chưa có cache -> Gọi AI API
     try:
         ket_qua_ai = _goi_ai_that(profile, top_n_results)
-    except NotImplementedError:
-        return None  # Issue 3.8 chua noi AI that
     except Exception:
-        return None  # AI loi mang/het quota -> fallback L1, khong crash app
+        return None  # AI lỗi -> fallback L1, không crash app
 
-    try:
-        ai_cache_repo.save_result(ma_hash, ket_qua_ai)
-    except (MongoRepositoryError, PyMongoError):
-        pass  # luu cache that bai cung khong sao, van co ket qua de tra ve
+    if ket_qua_ai is None:
+        return None
+
+    # 3. Lưu cache vào Mongo nếu có Mongo
+    if config.has_mongo():
+        try:
+            ai_cache_repo.save_result(ma_hash, ket_qua_ai)
+        except (MongoRepositoryError, PyMongoError):
+            pass
 
     return ket_qua_ai
+
+
+def chat_with_ai(user_question: str, profile: dict, all_unis: list[dict]) -> str:
+    """Cho phép người dùng hỏi đáp trực tiếp với Gemini AI về các trường đại học trong hệ thống."""
+    api_key = config.API_KEY or os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return "⚠️ Chưa có GEMINI_API_KEY trong file .env. Vui lòng bổ sung API Key để sử dụng tính năng trò chuyện AI."
+
+    unis_info = []
+    for u in all_unis[:15]:
+        unis_info.append({
+            "name": u.get("name"),
+            "country": u.get("country"),
+            "city": u.get("city"),
+            "gpa_min": u.get("gpa_min"),
+            "ielts_min": u.get("ielts_min"),
+            "tuition": f"{u.get('tuition_per_year')} {u.get('currency', 'USD')}/năm",
+            "majors": u.get("majors", [])[:5] if isinstance(u.get("majors"), list) else u.get("majors", "")
+        })
+
+    prompt_system = (
+        "Bạn là Trợ lý AI tư vấn du học thông minh của UniCompare. "
+        f"Hồ sơ người dùng hiện tại: GPA {profile.get('gpa')}, IELTS {profile.get('ielts')}, Ngân sách {profile.get('budget_per_year', 0):,.0f} VNĐ/năm.\n\n"
+        f"Danh sách các trường đại học trong hệ thống UniCompare:\n{json.dumps(unis_info, ensure_ascii=False)}\n\n"
+        f"Câu hỏi của sinh viên: '{user_question}'\n\n"
+        "Hãy trả lời bằng tiếng Việt thân thiện, rõ ràng (2-4 câu hoặc gạch đầu dòng), tư vấn dựa trên thông tin trường và hồ sơ sinh viên."
+    )
+
+    models_to_try = ["gemini-flash-latest", "gemini-2.0-flash", "gemma-4-26b-a4b-it"]
+
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt_system}]}],
+            "generationConfig": {"temperature": 0.5}
+        }).encode("utf-8")
+
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return text.strip()
+        except Exception:
+            continue
+
+    return "⚠️ Hiện không thể kết nối tới AI API (vui lòng kiểm tra lại mạng hoặc quota API Key)."
