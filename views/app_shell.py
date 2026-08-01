@@ -30,6 +30,7 @@ from repositories.fake_repo import FakeRepo
 from repositories.mongo_repo import MongoUniversityRepository
 import config
 from views.components.search_page import SearchPage
+from views.components.chatbot_page import ChatbotPage
 from views.admin_view import open_admin_window
 
 
@@ -45,7 +46,7 @@ FRAME_SPECS = {
     "detail": DetailPage,   # mo tu card, khong nam trong sidebar menu
     "search": SearchPage,
     "compare": ComparePage,
-    "chatbot": ("Chatbot", "🤖"),
+    "chatbot": ChatbotPage,
 }
 
 
@@ -76,9 +77,15 @@ class AppShell(tb.Window):
             ("BannerLink.TButton", colors.light, colors.primary),      # nut tren banner navy
             ("CardDangerLink.TButton", colors.danger, colors.light),   # nut "Bo luu" tren card trang
             ("CardTealLink.TButton", colors.success, colors.light),    # nut lien ket teal tren card trang
+            ("MessengerBlue.TButton", colors.light, "#0084FF"),        # nut style Messenger Blue
+            ("QuickPill.TButton", "#0084FF", "#E7F3FF"),               # nut pill goi y nhanh messenger
         ]:
             self.style.configure(style_name, foreground=fg, background=bg, borderwidth=0, focuscolor=bg)
             self.style.map(style_name, foreground=[("active", fg)], background=[("active", bg)])
+
+        # Messenger Chat Bubble Label styles
+        self.style.configure("UserBubble.TLabel", background="#0084FF", foreground="#FFFFFF", font=("Segoe UI", 10, "bold"), padding=(14, 10))
+        self.style.configure("BotBubble.TLabel", background="#E7F3FF", foreground="#0F172A", font=("Segoe UI", 10), padding=(14, 10))
 
         # repo dung chung cho moi View, lay qua controller.repo
         # Issue 2.3: dùng MongoRepo nếu có MONGO_URI, fallback FakeRepo
