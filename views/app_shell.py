@@ -88,9 +88,15 @@ class AppShell(tb.Window):
         self.style.configure("BotBubble.TLabel", background="#E7F3FF", foreground="#0F172A", font=("Segoe UI", 10), padding=(14, 10))
 
         # repo dung chung cho moi View, lay qua controller.repo
-        # Issue 2.3: dùng MongoRepo nếu có MONGO_URI, fallback FakeRepo
+        # Issue 2.3: dùng MongoRepo nếu có MONGO_URI, fallback FakeRepo nếu lỗi kết nối
         if config.has_mongo():
-            self.repo = MongoUniversityRepository()
+            try:
+                mongo_repo = MongoUniversityRepository()
+                mongo_repo.get_all()  # Test kết nối sớm
+                self.repo = mongo_repo
+            except Exception as err:
+                print(f"[Cảnh báo MongoDB Atlas] {err}\n  -> Tự động dùng FakeRepo để ứng dụng tiếp tục chạy bình thường.")
+                self.repo = FakeRepo()
         else:
             self.repo = FakeRepo()
 
