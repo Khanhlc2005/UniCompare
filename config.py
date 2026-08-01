@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI", "").strip()
-API_KEY = os.getenv("API_KEY", "").strip()
+API_KEY = os.getenv("API_KEY", os.getenv("GEMINI_API_KEY", "")).strip()
 
 DB_NAME = os.getenv("MONGO_DB_NAME", "unicompare").strip()
 COLLECTION_UNIVERSITIES = "universities"
@@ -22,15 +22,18 @@ def has_mongo() -> bool:
     return bool(MONGO_URI)
 
 
+def has_api_key() -> bool:
+    return bool(API_KEY)
+
+
 def mongo_hint() -> str:
-    """Goi y khi thieu MONGO_URI, dung chung cho canh bao va thong bao loi."""
+    """Gợi ý khi thiếu MONGO_URI / API_KEY."""
     return (
-        "Khong tim thay MONGO_URI trong .env.\n"
-        "  -> Neu ban dang phat trien UI/logic, hay dung repositories.fake_repo.FakeRepo\n"
-        "     thay vi mongo_repo de khong can ket noi Mongo that.\n"
-        "  -> Neu ban muon nap du lieu that, tao file .env (xem .env.example) va dien:\n"
+        "Không tìm thấy MONGO_URI hoặc API_KEY trong .env.\n"
+        "  -> Ứng dụng vẫn hoạt động bình thường với fake_repo (FakeRepo) và L1 Rule Engine.\n"
+        "  -> Để dùng tính năng L2 AI Explanation (miễn phí), tạo file .env và điền:\n"
         "       MONGO_URI=mongodb://localhost:27017\n"
-        "       API_KEY=...\n"
+        "       GEMINI_API_KEY=AIzaSy... (Lấy free tại https://aistudio.google.com/app/apikey)\n"
     )
 
 

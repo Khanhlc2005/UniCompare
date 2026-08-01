@@ -407,6 +407,12 @@ class ChatbotPage(tb.Frame):
 
         # Phân tích điểm phù hợp bằng L1 Rule Engine
         results = recommend_service.score_all(profile, all_unis, top_n=5)
+
+        # Lấy L2 AI Explanation (lấy từ cache hoặc gọi AI API, tự động fallback nếu lỗi/không key)
+        ai_results = recommend_service.get_explanation(profile, results)
+        if ai_results:
+            results = ai_results
+
         top_score = results[0]["score"] if results else 0
 
         # Option A: Cảnh báo khi hồ sơ quá yếu (0% hoặc điểm phù hợp rất thấp)
@@ -494,7 +500,17 @@ class ChatbotPage(tb.Frame):
             gpa_req = uni.get("gpa_min", "N/A")
 
             stats_txt = f"GPA min: {gpa_req}  •  IELTS min: {ielts_req}  •  Học phí: {t_str}/năm"
-            tb.Label(card, text=stats_txt, foreground=self._colors.secondary, font=("Segoe UI", 9)).pack(anchor="w", pady=(0, 10))
+            tb.Label(card, text=stats_txt, foreground=self._colors.secondary, font=("Segoe UI", 9)).pack(anchor="w", pady=(0, 8))
+
+            # Lời giải thích từ AI (nếu có)
+            explanation = item.get("explanation")
+            if explanation:
+                exp_frame = tk.Frame(card, bg="#F0F7FF", padx=10, pady=8)
+                exp_frame.pack(fill="x", anchor="w", pady=(0, 10))
+                tk.Label(
+                    exp_frame, text=f"💡 AI Nhận xét: {explanation}", bg="#F0F7FF", fg="#1E3A8A",
+                    font=("Segoe UI", 9, "italic"), wraplength=500, justify="left",
+                ).pack(anchor="w")
 
             # Nút Xem chi tiết
             action_bar = tb.Frame(card, bootstyle="light")
