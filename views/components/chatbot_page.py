@@ -18,6 +18,13 @@ import ttkbootstrap as tb
 from services import recommend_service, wizard_service
 from views.components.scrollable_frame import ScrollableFrame
 
+
+def _format_budget(budget_per_year) -> str:
+    """Hien thi ngan sach cho de doc - rieng gia tri sentinel 'khong gioi han' thi ghi chu vay luon."""
+    if budget_per_year == wizard_service.NGAN_SACH_KHONG_GIOI_HAN:
+        return "Không giới hạn"
+    return f"{budget_per_year:,.0f} VNĐ/năm"
+
 WIZARD_STEPS = [
     ("1", "Học lực", "GPA"),
     ("2", "Chứng chỉ", "IELTS"),
@@ -305,10 +312,11 @@ class ChatbotPage(tb.Frame):
         tb.Label(pills_row, text="Gợi ý nhanh:", foreground=self._colors.secondary, font=("Segoe UI", 8, "bold")).pack(side="left", padx=(0, 6))
 
         for b_str in ["150 triệu", "250 triệu", "400 triệu", "Không giới hạn"]:
-            b_val = "0" if "Không" in b_str else b_str
+            # truyen thang text hien thi vao wizard - parse_budget() tu nhan
+            # dien "khong gioi han" (khac voi "0"/de trong la thieu du lieu)
             tb.Button(
                 pills_row, text=b_str, style="QuickPill.TButton",
-                command=lambda s=b_val: [entry_var.set(s), submit()],
+                command=lambda s=b_str: [entry_var.set(s), submit()],
             ).pack(side="left", padx=4)
 
     # ── Bước 4: Ưu tiên (Quốc gia & Ngành) ────────────────────────────────
@@ -427,14 +435,14 @@ class ChatbotPage(tb.Frame):
             self._add_bot_bubble(
                 f"⚠️ Hồ sơ của bạn có mức độ phù hợp tương đối thấp (cao nhất đạt {top_score}%).\n"
                 f"Dựa trên GPA ({profile['gpa']}), IELTS ({profile['ielts']}), "
-                f"Ngân sách ({profile['budget_per_year']:,.0f} VNĐ/năm), "
+                f"Ngân sách ({_format_budget(profile['budget_per_year'])}), "
                 f"dưới đây là danh sách các trường có yêu cầu gần nhất với hồ sơ của bạn:"
             )
         else:
             self._add_bot_bubble(
                 f"🎉 Phân tích hoàn tất!\n"
                 f"Dựa trên GPA ({profile['gpa']}), IELTS ({profile['ielts']}), "
-                f"Ngân sách ({profile['budget_per_year']:,.0f} VNĐ/năm), "
+                f"Ngân sách ({_format_budget(profile['budget_per_year'])}), "
                 f"dưới đây là Top 5 trường đại học phù hợp nhất dành cho bạn:"
             )
 
