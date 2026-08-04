@@ -19,6 +19,26 @@ Chỉ dùng field đã có trong schema `universities` (ARCHITECTURE.md §4).
 Riêng tiêu chí C6 (ranking) không cần người dùng nhập gì — chấm thẳng từ field
 `ranking` của trường.
 
+### 1.1. Chuẩn hoá input ở Wizard
+
+Hai xử lý sau nằm ở `wizard_service.py` (bước thu thập, TRƯỚC khi profile được
+đưa vào `recommend_service.score()`), không đổi hợp đồng field hay công thức
+chấm điểm ở mục 2 — chỉ chuẩn hoá dữ liệu đầu vào cho đúng ý người dùng:
+
+- **GPA thang 10 → thang 4 (bước 1):** nếu người dùng nhập `4.0 < gpa <= 10.0`,
+  `parse_gpa()` coi đây là điểm thang 10 và tự quy đổi xấp xỉ về thang 4 bằng
+  `gpa_4 = gpa_10 / 2.5`. Đây là công thức ước lượng tuyến tính đơn giản (không
+  phải bảng quy đổi chính thức của Bộ GD&ĐT) — đủ dùng cho mục đích gợi ý sơ bộ
+  của chatbot, KHÔNG dùng để xét tuyển thật. Nếu `gpa <= 4.0`, giữ nguyên vì đã
+  đúng thang 4.
+- **Ngân sách "Không giới hạn" (bước 3):** wizard nhận diện các cụm nhập tự do
+  "không giới hạn" / "khong gioi han" / "vô hạn" / "unlimited" và gán một số rất
+  lớn — hằng số `NGAN_SACH_KHONG_GIOI_HAN = 10**12` trong `wizard_service.py` —
+  thay vì `0`. Lý do: `budget_per_year = 0` (bỏ trống/không nhập) đã có ý nghĩa
+  riêng ở mục 3.3 dưới đây là "thiếu dữ liệu ngân sách → chấm 0 điểm C3"; nếu
+  dùng chung `0` cho cả hai case thì người chọn "không giới hạn" sẽ bị chấm
+  *sai* thành 0 điểm ngân sách (tệ nhất có thể) thay vì đạt tối đa.
+
 ## 2. Tiêu chí & cách tính điểm từng tiêu chí
 
 6 tiêu chí, mỗi tiêu chí có trọng số riêng, tổng trọng số = **100**.
