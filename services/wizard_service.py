@@ -12,6 +12,11 @@
 
 import re
 
+# Dai dien cho "khong gioi han ngan sach" - lon hon bat ky hoc phi thuc te nao
+# sau khi quy doi VND (xem TY_GIA_VND trong recommend_service.py), de tieu chi
+# C3 luon dat diem toi da thay vi bi hieu nham la "thieu du lieu ngan sach".
+NGAN_SACH_KHONG_GIOI_HAN = 10**12
+
 
 def parse_gpa(raw_input: str | float | int) -> tuple[bool, float | None, str]:
     """Validate & quy đổi GPA về thang 4.0.
@@ -79,6 +84,14 @@ def parse_budget(raw_input: str | float | int) -> tuple[bool, float | None, str]
     Hỗ trợ nhập: "200000000", "200tr", "200 triệu", "150tr/năm", v.v.
     """
     text = str(raw_input or "").strip().lower()
+
+    # "khong gioi han" phai kiem tra TRUOC nhanh "0/rong" ben duoi - y nghia
+    # nguoc han nhau: nguoi dung KHONG bi gioi han tien (cham C3 toi da), khac
+    # voi "khong nhap gi/ngan sach 0" la thieu du lieu nen cham 0 diem (xem
+    # recommend_service._diem_c3_ngan_sach).
+    if text in ("không giới hạn", "khong gioi han", "vô hạn", "vo han", "unlimited"):
+        return True, NGAN_SACH_KHONG_GIOI_HAN, "Ngân sách: Không giới hạn"
+
     if text == "" or text in ("0", "khong", "không", "chưa rõ", "chua ro"):
         return True, 0.0, "Ngân sách: 0 VNĐ/năm"
 
