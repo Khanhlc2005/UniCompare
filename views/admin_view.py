@@ -30,10 +30,15 @@ class FormField:
 FORM_FIELDS = (
     FormField("name", "Tên trường", True),
     FormField("country", "Quốc gia", True),
-    FormField("gpa", "GPA tối thiểu"),
-    FormField("ielts", "IELTS tối thiểu"),
-    FormField("tuition", "Học phí/năm (USD)"),
-    FormField("description", "Mô tả"),
+    FormField("gpa_min", "GPA tối thiểu"),
+    FormField("ielts_min", "IELTS tối thiểu"),
+    FormField("toefl_min", "TOEFL tối thiểu"),
+    FormField("tuition_per_year", "Học phí mỗi năm"),
+    FormField("currency", "Đơn vị tiền tệ"),
+    FormField("ranking", "Xếp hạng"),
+    FormField("deadline", "Hạn nộp hồ sơ"),
+    FormField("majors", "Ngành học"),
+    FormField("overview", "Tổng quan"),
 )
 
 
@@ -43,9 +48,11 @@ class AdminView(ttk.Frame):
     TREE_COLUMNS = (
         "name",
         "country",
-        "gpa",
-        "ielts",
-        "tuition",
+        "gpa_min",
+        "ielts_min",
+        "tuition_per_year",
+        "currency",
+        "ranking",
     )
 
     def __init__(
@@ -221,16 +228,21 @@ class AdminView(ttk.Frame):
         headings = {
             "name": "Tên trường",
             "country": "Quốc gia",
-            "gpa": "GPA",
-            "ielts": "IELTS",
-            "tuition": "Học phí",
+            "gpa_min": "GPA",
+            "ielts_min": "IELTS",
+            "tuition_per_year": "Học phí",
+            "currency": "Tiền tệ",
+            "ranking": "Xếp hạng",
         }
+
         widths = {
-            "name": 260,
-            "country": 120,
-            "gpa": 70,
-            "ielts": 70,
-            "tuition": 105,
+            "name": 250,
+            "country": 110,
+            "gpa_min": 65,
+            "ielts_min": 65,
+            "tuition_per_year": 110,
+            "currency": 70,
+            "ranking": 80,
         }
 
         for column in self.TREE_COLUMNS:
@@ -389,9 +401,11 @@ class AdminView(ttk.Frame):
                     values=(
                         self._display_value(document.get("name", "")),
                         self._display_value(document.get("country", "")),
-                        self._display_value(document.get("gpa", "")),
-                        self._display_value(document.get("ielts", "")),
-                        self._format_tuition(document.get("tuition", "")),
+                        self._display_value(document.get("gpa_min", "")),
+                        self._display_value(document.get("ielts_min", "")),
+                        self._format_tuition(document.get("tuition_per_year", "")),
+                        self._display_value(document.get("currency", "")),
+                        self._display_value(document.get("ranking", "")),
                     ),
                     tags=(document_id,),
                 )
@@ -464,31 +478,74 @@ class AdminView(ttk.Frame):
         if not country:
             raise ValueError("Quốc gia là trường bắt buộc.")
 
-        gpa = self._to_optional_float(self.form_vars["gpa"].get(), "GPA")
-        ielts = self._to_optional_float(self.form_vars["ielts"].get(), "IELTS tối thiểu")
-        tuition = self._to_optional_float(self.form_vars["tuition"].get(), "Học phí")
+        gpa_min = self._to_optional_float(
+            self.form_vars["gpa_min"].get(),
+            "GPA tối thiểu",
+        )
+        ielts_min = self._to_optional_float(
+            self.form_vars["ielts_min"].get(),
+            "IELTS tối thiểu",
+        )
+        toefl_min = self._to_optional_float(
+            self.form_vars["toefl_min"].get(),
+            "TOEFL tối thiểu",
+        )
+        tuition_per_year = self._to_optional_float(
+            self.form_vars["tuition_per_year"].get(),
+            "Học phí mỗi năm",
+        )
+        ranking = self._to_optional_float(
+            self.form_vars["ranking"].get(),
+            "Xếp hạng",
+        )
 
-        if gpa is not None and gpa > 4:
+        if gpa_min is not None and gpa_min > 4:
             raise ValueError("GPA phải nằm trong khoảng 0 đến 4.")
-        if ielts is not None and ielts > 9:
+
+        if ielts_min is not None and ielts_min > 9:
             raise ValueError("IELTS phải nằm trong khoảng 0 đến 9.")
+
+        if toefl_min is not None and toefl_min > 120:
+            raise ValueError("TOEFL phải nằm trong khoảng 0 đến 120.")
+
+        majors_raw = self.form_vars["majors"].get().strip()
+        majors = [
+            major.strip()
+            for major in majors_raw.split(",")
+            if major.strip()
+        ]
 
         payload: Document = {
             "name": name,
             "country": country,
-            "description": self.form_vars["description"].get().strip(),
+            "currency": self.form_vars["currency"].get().strip(),
+            "deadline": self.form_vars["deadline"].get().strip(),
+            "overview": self.form_vars["overview"].get().strip(),
         }
 
-        optional_values = {"gpa": gpa, "ielts": ielts, "tuition": tuition}
+        optional_values = {
+            "gpa_min": gpa_min,
+            "ielts_min": ielts_min,
+            "toefl_min": toefl_min,
+            "tuition_per_year": tuition_per_year,
+            "ranking": ranking,
+        }
+
         payload.update(
-            {key: value for key, value in optional_values.items() if value is not None}
+            {
+                key: value
+                for key, value in optional_values.items()
+                if value is not None
+            }
         )
 
-        # Không lưu các chuỗi tùy chọn rỗng.
+        if majors:
+            payload["majors"] = majors
+
         return {
             key: value
             for key, value in payload.items()
-            if value not in ("", None)
+            if value not in ("", None, [])
         }
 
     # ------------------------------------------------------------------
