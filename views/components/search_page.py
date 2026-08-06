@@ -24,9 +24,8 @@ import ttkbootstrap as tb
 
 from services import university_service, compare_service
 from views.components.scrollable_frame import ScrollableFrame
-from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
-
+ALL_LABEL="Tất cả"
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
     ("≤ $25,000", 25000),
@@ -59,6 +58,10 @@ class SearchPage(tb.Frame):
         self._keyword_var = tk.StringVar()
         # go phim -> loc lai ngay (khong can nut "Tim"), dung cho UX pill filter
         self._keyword_var.trace_add("write", lambda *_: self._on_filters_changed())
+        self._country_var=tk.StringVar(value=ALL_LABEL)
+        self._tuition_var=tk.StringVar(value=ALL_LABEL)
+        self._ielts_var=tk.StringVar(value=ALL_LABEL)
+        
         self._scroll = ScrollableFrame(self)
         self._scroll.pack(fill="both", expand=True)
 
@@ -71,8 +74,6 @@ class SearchPage(tb.Frame):
         # compare_bar.py refresh())
         self._compare_bar_holder = tb.Frame(self._scroll.body)
         self._compare_bar_holder.pack(fill="x")
-        self._filters_holder = tb.Frame(self._scroll.body)
-        self._filters_holder.pack(fill="x", padx=28, pady=(0, 8))
         self._results_holder = tb.Frame(self._scroll.body)
         self._results_holder.pack(fill="both", expand=True, padx=28, pady=(0, 24))
 
@@ -89,6 +90,39 @@ class SearchPage(tb.Frame):
         tb.Entry(
             search_row, textvariable=self._keyword_var, font=("Segoe UI", 11)
         ).pack(fill="x", ipady=4)
+        filter_row = tb.Frame(self._scroll.body)
+        filter_row.pack(fill="x", padx=28, pady=(0, 16))
+
+        self._country_combo = self._build_filter_dropdown(
+            filter_row, "Quốc gia", self._country_var, [], self._on_country_select
+        )
+        self._tuition_combo = self._build_filter_dropdown(
+            filter_row, "Học phí", self._tuition_var,
+            [l for l, _ in TUITION_PILLS], self._on_tuition_select
+        )
+        self._ielts_combo = self._build_filter_dropdown(
+            filter_row, "IELTS", self._ielts_var,
+            [l for l, _ in IELTS_PILLS], self._on_ielts_select
+        )
+    def _build_filter_dropdown(self, parent, title, var, options, handler):
+        group = tb.Frame(parent)
+        group.pack(side="left", padx=(0, 12), fill="x", expand=True)
+
+        tb.Label(
+            group, text=title, foreground=self._colors.secondary,
+            font=("Segoe UI", 8, "bold")
+        ).pack(anchor="w")
+
+        combo = tb.Combobox(
+            group, textvariable=var, values=[ALL_LABEL] + list(options),
+            state="readonly", bootstyle="secondary",
+        )
+        combo.pack(fill="x", pady=(2, 0))
+        combo.bind(
+            "<<ComboboxSelected>>",
+            lambda e, v=var, h=handler: h(None if v.get() == ALL_LABEL else v.get())
+        )
+        return combo
 
     def refresh(self, **kwargs):
         """AppShell gọi mỗi lần trang này được tkraise() lên - đọc lại dữ
@@ -98,13 +132,11 @@ class SearchPage(tb.Frame):
     def _render(self):
         for w in self._compare_bar_holder.winfo_children():
             w.destroy()
-        for w in self._filters_holder.winfo_children():
-            w.destroy()
         for w in self._results_holder.winfo_children():
             w.destroy()
 
         self._build_compare_bar()
-        self._build_filters()
+        self._refresh_country_options()
 
         tuition_max = dict(TUITION_PILLS).get(self._active_tuition_label)
         ielts_max = dict(IELTS_PILLS).get(self._active_ielts_label)
@@ -150,21 +182,9 @@ class SearchPage(tb.Frame):
     def _go_to_compare(self):
         self._controller.show_frame("compare")
 
-    def _build_filters(self):
+    def _refresh_country_options(self):
         countries = university_service.get_countries(self._controller.repo)
-
-        for title, options, active, handler in [
-            ("Quốc gia", countries, self._active_country, self._on_country_select),
-            ("Học phí", [l for l, _ in TUITION_PILLS], self._active_tuition_label, self._on_tuition_select),
-            ("IELTS", [l for l, _ in IELTS_PILLS], self._active_ielts_label, self._on_ielts_select),
-        ]:
-            tb.Label(
-                self._filters_holder, text=title, foreground=self._colors.secondary,
-                font=("Segoe UI", 8, "bold")
-            ).pack(anchor="w")
-            PillFilter(
-                self._filters_holder, options=options, active=active, on_select=handler,
-            ).pack(anchor="w", pady=(2, 10))
+        self._country_combo["values"] = [ALL_LABEL] + list(countries)
 
     def _build_empty_state(self):
         empty = tb.Frame(self._results_holder, bootstyle="light", padding=40)
