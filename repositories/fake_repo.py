@@ -1,82 +1,21 @@
 import uuid
+import json
+import os
+import uuid
+
+_SEED_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "data", "seed_data.json"
+)
 
 class FakeRepo:
     def __init__(self):
         # Khởi tạo dữ liệu giả lập (mock data) với 8 trường đại học mẫu[cite: 1]
-        self._db = [
-            {
-                "id": "1",
-                "name": "Massachusetts Institute of Technology (MIT)",
-                "country": "USA",
-                "gpa": 3.9,
-                "ielts": 7.5,
-                "tuition": 55000,
-                "description": "Viện công nghệ hàng đầu, mạnh về khoa học và kỹ thuật."
-            },
-            {
-                "id": "2",
-                "name": "Stanford University",
-                "country": "USA",
-                "gpa": 3.9,
-                "ielts": 7.5,
-                "tuition": 56000,
-                "description": "Nằm tại Thung lũng Silicon, thế mạnh vượt trội về Khoa học Máy tính."
-            },
-            {
-                "id": "3",
-                "name": "University of Oxford",
-                "country": "UK",
-                "gpa": 3.8,
-                "ielts": 7.5,
-                "tuition": 35000,
-                "description": "Đại học lâu đời nhất thế giới nói tiếng Anh, môi trường học thuật danh giá."
-            },
-            {
-                "id": "4",
-                "name": "University of Cambridge",
-                "country": "UK",
-                "gpa": 3.8,
-                "ielts": 7.5,
-                "tuition": 34000,
-                "description": "Nổi tiếng với các chương trình khoa học tự nhiên và toán học."
-            },
-            {
-                "id": "5",
-                "name": "University of Toronto",
-                "country": "Canada",
-                "gpa": 3.7,
-                "ielts": 6.5,
-                "tuition": 45000,
-                "description": "Trường top đầu Canada với cơ sở vật chất hiện đại."
-            },
-            {
-                "id": "6",
-                "name": "University of British Columbia",
-                "country": "Canada",
-                "gpa": 3.6,
-                "ielts": 6.5,
-                "tuition": 42000,
-                "description": "Trọng tâm vào nghiên cứu và phát triển bền vững."
-            },
-            {
-                "id": "7",
-                "name": "National University of Singapore (NUS)",
-                "country": "Singapore",
-                "gpa": 3.8,
-                "ielts": 7.0,
-                "tuition": 25000,
-                "description": "Đại học số 1 Châu Á, kết nối công nghệ và kinh doanh toàn cầu."
-            },
-            {
-                "id": "8",
-                "name": "Nanyang Technological University (NTU)",
-                "country": "Singapore",
-                "gpa": 3.7,
-                "ielts": 6.5,
-                "tuition": 24000,
-                "description": "Thế mạnh về kỹ thuật và các phòng lab nghiên cứu tiên tiến."
-            }
-        ]
+        try:
+            with open(_SEED_PATH, encoding="utf-8") as f:
+                self._db = json.load(f)
+        except (OSError, json.JSONDecodeError) as err:
+            print(f"[FakeRepo] Khong doc duoc {_SEED_PATH}: {err}")
+            self._db = []
 
     # Các phương thức tuân thủ đúng Hợp đồng giao tiếp (Repository interface)[cite: 1]
     
