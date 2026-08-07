@@ -247,3 +247,23 @@ def test_score_all_fallback_ve_id_mongo_khi_khong_co_id_chuan():
     universities = [{"_id": "507f1f77bcf86cd799439011", "name": "X"}]
     ket_qua = rs.score_all(profile, universities, top_n=5)
     assert ket_qua[0]["university_id"] == "507f1f77bcf86cd799439011"
+
+
+# ─── chat_with_ai & get_explanation ────────────────────────────────
+def test_chat_with_ai_no_api_key(monkeypatch):
+    monkeypatch.setattr("config.API_KEY", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    res = rs.chat_with_ai("Học phí thế nào?", {}, [])
+    assert "⚠️" in res or "Chưa có" in res
+
+
+def test_get_explanation_returns_list_or_none():
+    profile = {"gpa": 3.5, "ielts": 6.5, "budget_per_year": 200000000}
+    top_unis = [{"university_id": "1", "name": "Test Uni", "score": 80}]
+    res = rs.get_explanation(profile, top_unis)
+    if res is not None:
+        assert isinstance(res, list)
+        assert len(res) == 1
+        assert "explanation" in res[0]
+

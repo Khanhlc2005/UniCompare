@@ -10,6 +10,7 @@ Nâng cấp ChatbotView theo phong cách Messenger:
 - Cảnh báo Option A khi hồ sơ quá yếu (0% phù hợp).
 """
 
+import threading
 import tkinter as tk
 from tkinter import messagebox
 
@@ -134,7 +135,38 @@ class ChatbotPage(tb.Frame):
                 font=("Segoe UI", 9, "bold" if i == current else "normal")
             ).pack(side="left")
 
-    # ── 2. Chat Conversation Helpers (Messenger Style) ───────────────────
+    # ── 2. Chat Conversation Helpers (Messenger Style & Markdown) ────────
+
+    def _create_markdown_widget(self, parent, text: str, bg: str, fg: str, font_size: int = 10, max_width: int = 55):
+        """Tạo widget Text phong cách Messenger Bubble hỗ trợ render in đậm Markdown (**text**)."""
+        import math
+        import re
+
+        lines = text.split("\n")
+        calc_height = 0
+        for line in lines:
+            if not line.strip():
+                calc_height += 1
+            else:
+                calc_height += max(1, math.ceil(len(line) / (max_width - 5)))
+
+        txt_widget = tk.Text(
+            parent, bg=bg, fg=fg, font=("Segoe UI", font_size),
+            wrap="word", bd=0, highlightthickness=0, relief="flat",
+            width=max_width, height=max(1, calc_height), padx=12, pady=10
+        )
+        txt_widget.tag_configure("bold", font=("Segoe UI", font_size, "bold"))
+        txt_widget.tag_configure("normal", font=("Segoe UI", font_size))
+
+        parts = re.split(r"(\*\*.*?\*\*)", text)
+        for part in parts:
+            if part.startswith("**") and part.endswith("**") and len(part) >= 4:
+                txt_widget.insert("end", part[2:-2], "bold")
+            else:
+                txt_widget.insert("end", part, "normal")
+
+        txt_widget.config(state="disabled")
+        return txt_widget
 
     def _add_bot_bubble(self, text: str):
         """Thêm tin nhắn dạng Messenger Bubble của Bot (Nền xanh nhạt #E7F3FF, chữ xanh đen #0F172A)."""
@@ -143,9 +175,8 @@ class ChatbotPage(tb.Frame):
 
         tb.Label(row, text="🤖", font=("Segoe UI", 14)).pack(side="left", anchor="n", padx=(0, 8))
 
-        bubble = tb.Label(
-            row, text=text, style="BotBubble.TLabel",
-            wraplength=550, justify="left"
+        bubble = self._create_markdown_widget(
+            row, text, bg=COLOR_BOT_BUBBLE_BG, fg=COLOR_BOT_TEXT, font_size=10, max_width=55
         )
         bubble.pack(side="left", anchor="w")
 
@@ -404,7 +435,7 @@ class ChatbotPage(tb.Frame):
             style="BannerLink.TButton", command=finish,
         ).pack(side="right")
 
-    # ── 4. Card Kết Quả Gợi Ý (Top N + % phù hợp) ─────────────────────────
+    # ── 4. Card Kết Quả Gợi Ý & AI Interactive Chat ─────────────────────
 
     def _show_results(self):
         self._clear_controls()
@@ -413,14 +444,8 @@ class ChatbotPage(tb.Frame):
         all_unis = self._controller.repo.get_all()
         profile = self._wizard.get_profile()
 
-        # Phân tích điểm phù hợp bằng L1 Rule Engine
+        # Phân tích điểm phù hợp bằng L1 Rule Engine (tức thì, 0ms delay)
         results = recommend_service.score_all(profile, all_unis, top_n=5)
-
-        # Lấy L2 AI Explanation (lấy từ cache hoặc gọi AI API, tự động fallback nếu lỗi/không key)
-        ai_results = recommend_service.get_explanation(profile, results)
-        if ai_results:
-            results = ai_results
-
         top_score = results[0]["score"] if results else 0
 
         # Option A: Cảnh báo khi hồ sơ quá yếu (0% hoặc điểm phù hợp rất thấp)
@@ -449,6 +474,8 @@ class ChatbotPage(tb.Frame):
         # Frame chứa danh sách card kết quả
         cards_container = tb.Frame(self._scroll.body)
         cards_container.pack(fill="x", pady=10)
+
+        exp_frames = {}
 
         for rank_idx, item in enumerate(results, 1):
             uni_id = item["university_id"]
@@ -510,15 +537,15 @@ class ChatbotPage(tb.Frame):
             stats_txt = f"GPA min: {gpa_req}  •  IELTS min: {ielts_req}  •  Học phí: {t_str}/năm"
             tb.Label(card, text=stats_txt, foreground=self._colors.secondary, font=("Segoe UI", 9)).pack(anchor="w", pady=(0, 8))
 
-            # Lời giải thích từ AI (nếu có)
-            explanation = item.get("explanation")
-            if explanation:
-                exp_frame = tk.Frame(card, bg="#F0F7FF", padx=10, pady=8)
-                exp_frame.pack(fill="x", anchor="w", pady=(0, 10))
-                tk.Label(
-                    exp_frame, text=f"💡 AI Nhận xét: {explanation}", bg="#F0F7FF", fg="#1E3A8A",
-                    font=("Segoe UI", 9, "italic"), wraplength=500, justify="left",
-                ).pack(anchor="w")
+            # Container cho AI Explanation (sẽ được điền dữ liệu asynchronously)
+            exp_frame = tk.Frame(card, bg="#F0F7FF", padx=10, pady=8)
+            exp_frame.pack(fill="x", anchor="w", pady=(0, 10))
+            exp_lbl = tk.Label(
+                exp_frame, text="💡 AI Nhận xét: Đang tải phân tích chi tiết từ Gemini...", bg="#F0F7FF", fg="#1E3A8A",
+                font=("Segoe UI", 9, "italic"), wraplength=500, justify="left",
+            )
+            exp_lbl.pack(anchor="w")
+            exp_frames[str(uni_id)] = (exp_frame, exp_lbl)
 
             # Nút Xem chi tiết
             action_bar = tb.Frame(card, bootstyle="light")
@@ -536,13 +563,102 @@ class ChatbotPage(tb.Frame):
                 lambda e, uid=uni_id: self._controller.show_frame("detail", university_id=uid),
             )
 
-        # Thêm nút bấm làm lại ở cuối
-        restart_row = tb.Frame(self._control_frame)
-        restart_row.pack(fill="x")
+        # Lấy L2 AI Explanation qua background thread để tránh làm đơ giao diện
+        def fetch_explanations():
+            ai_results = recommend_service.get_explanation(profile, results)
+            def update_ui():
+                if ai_results:
+                    for item in ai_results:
+                        uid = str(item.get("university_id"))
+                        if uid in exp_frames:
+                            _, lbl = exp_frames[uid]
+                            explanation = item.get("explanation", "")
+                            if explanation:
+                                clean_exp = explanation.replace("**", "")
+                                lbl.config(text=f"💡 AI Nhận xét: {clean_exp}")
+                            else:
+                                exp_frames[uid][0].pack_forget()
+                else:
+                    for frame, _ in exp_frames.values():
+                        frame.pack_forget()
+            self.after(0, update_ui)
 
-        tb.Button(
-            restart_row, text="🔄 Đặt lại & Nhập hồ sơ mới",
-            style="BannerLink.TButton", command=self._start_wizard,
-        ).pack(side="right")
+        threading.Thread(target=fetch_explanations, daemon=True).start()
 
+        # Khởi tạo thanh Chat trực tiếp với AI phía dưới
+        self._setup_followup_chat()
         self._scroll_to_bottom()
+
+    def _setup_followup_chat(self):
+        """Tạo thanh chat tương tác trực tiếp với Gemini AI sau khi hiển thị gợi ý."""
+        self._clear_controls()
+
+        # Dòng Quick Pills gợi ý câu hỏi tiếp theo
+        pills_row = tb.Frame(self._control_frame)
+        pills_row.pack(fill="x", pady=(0, 6))
+
+        tb.Label(
+            pills_row, text="💡 Hỏi thêm AI:",
+            foreground=self._colors.secondary, font=("Segoe UI", 8, "bold")
+        ).pack(side="left", padx=(0, 6))
+
+        quick_questions = [
+            "Học phí trường nào hợp lý nhất?",
+            "Trường nào có nhiều học bổng?",
+            "Đâu là trường đào tạo CNTT tốt?",
+        ]
+
+        for q_str in quick_questions:
+            tb.Button(
+                pills_row, text=q_str, style="QuickPill.TButton",
+                command=lambda s=q_str: self._send_ai_chat_message(s)
+            ).pack(side="left", padx=3)
+
+        # Khung nhập tin nhắn chat
+        input_row = tb.Frame(self._control_frame)
+        input_row.pack(fill="x")
+
+        entry_var = tk.StringVar()
+        entry = tb.Entry(input_row, textvariable=entry_var, font=("Segoe UI", 10))
+        entry.pack(side="left", fill="x", expand=True, padx=(0, 8), ipady=3)
+        entry.focus()
+
+        def submit():
+            txt = entry_var.get().strip()
+            if not txt:
+                return
+            entry_var.set("")
+            self._send_ai_chat_message(txt)
+
+        entry.bind("<Return>", lambda e: submit())
+
+        tb.Button(input_row, text="Gửi ✈️", style="BannerLink.TButton", command=submit).pack(side="left", padx=(0, 6))
+        tb.Button(input_row, text="🔄 Đặt lại", style="QuickPill.TButton", command=self._start_wizard).pack(side="right")
+
+    def _send_ai_chat_message(self, user_question: str):
+        """Gửi câu hỏi của người dùng tới Gemini AI qua background thread."""
+        self._add_user_bubble(user_question)
+
+        # Thêm bubble tạm "AI đang suy nghĩ..."
+        loading_row = tb.Frame(self._scroll.body)
+        loading_row.pack(fill="x", pady=6, anchor="w")
+        tb.Label(loading_row, text="🤖", font=("Segoe UI", 14)).pack(side="left", anchor="n", padx=(0, 8))
+        loading_lbl = tb.Label(
+            loading_row, text="⏳ AI đang suy nghĩ...", style="BotBubble.TLabel",
+            font=("Segoe UI", 9, "italic")
+        )
+        loading_lbl.pack(side="left", anchor="w")
+        self._scroll_to_bottom()
+
+        profile = self._wizard.get_profile()
+        all_unis = self._controller.repo.get_all()
+
+        def worker():
+            answer = recommend_service.chat_with_ai(user_question, profile, all_unis)
+            def update_ui():
+                loading_row.destroy()
+                self._add_bot_bubble(answer)
+            self.after(0, update_ui)
+
+        threading.Thread(target=worker, daemon=True).start()
+
