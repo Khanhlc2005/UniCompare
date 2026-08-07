@@ -149,9 +149,9 @@ class WatchlistPage(tb.Frame):
         currency = uni.get("currency", "USD")
         tuition_text = f"{tuition:,.0f} {currency}" if tuition is not None else "N/A"
         ielts = university_service.lay_ielts(uni)
-        gpa = uni.get("gpa_min", uni.get("gpa", "N/A"))
+        gpa = university_service.lay_gpa(uni)
 
-        stats = f"GPA {gpa}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
+        stats = f"GPA {gpa if gpa is not None else 'N/A'}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
         stats_lbl = tb.Label(card, text=stats, foreground=self._colors.secondary)
         stats_lbl.pack(anchor="w", pady=(0, 10))
 

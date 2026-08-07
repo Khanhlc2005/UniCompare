@@ -30,6 +30,20 @@ def lay_ielts(uni: dict) -> float | None:
     return ielts if isinstance(ielts, (int, float)) else None
 
 
+def lay_gpa(uni: dict) -> float | None:
+    """Doc GPA toi thieu, uu tien field chuan gpa_min, fallback ve gpa.
+
+    nho: seed_data.json hay ghi gpa_min = null (khong phai thieu field), ma
+    dict.get(key, default) chi fallback khi THIEU key chu khong fallback khi
+    value la None -> phai check None thu cong, khong dung .get() 2 tang nhu
+    lay_hoc_phi/lay_ielts (may man 2 field do trong data khong bi null).
+    """
+    gpa = uni.get("gpa_min")
+    if gpa is None:
+        gpa = uni.get("gpa")
+    return gpa if isinstance(gpa, (int, float)) else None
+
+
 def _bo_dau(text: str) -> str:
     """Chuyển chuỗi về dạng không dấu + chữ thường, dùng để so khớp gõ tắt.
 
