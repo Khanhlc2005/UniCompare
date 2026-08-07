@@ -11,11 +11,14 @@ import tkinter as tk
 from tkinter import messagebox
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
+from repositories.mongo_repo import MongoRepositoryError
 from services import watchlist_service, compare_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
+from views.components.state_banner import StateBanner
 
 
 class WatchlistPage(tb.Frame):
@@ -35,6 +38,10 @@ class WatchlistPage(tb.Frame):
         self._render()
 
     def _get_watchlist_data(self):
+        # watchlist_service da tu bat loi Mongo rieng cho collection
+        # "watchlist" (tra [] + in canh bao neu rot ket noi). Con o day la
+        # collection "universities" - repo.get_by_id() CHUA duoc bat loi o
+        # dau khac nen phai bat rieng (Issue #54, edge case mat ket noi Mongo).
         data = []
         for uid in watchlist_service.get_watchlist_ids():
             uni = self._controller.repo.get_by_id(uid)
@@ -55,7 +62,13 @@ class WatchlistPage(tb.Frame):
             font=("Segoe UI", 18, "bold")
         ).pack(anchor="w", padx=28, pady=(20, 12))
 
-        all_data = self._get_watchlist_data()
+        try:
+            all_data = self._get_watchlist_data()
+        except (MongoRepositoryError, PyMongoError) as exc:
+            StateBanner.mongo_error(self._scroll.body, exc).pack(
+                fill="x", padx=28, pady=20
+            )
+            return
 
         if not all_data:
             self._build_empty_state(
@@ -101,10 +114,9 @@ class WatchlistPage(tb.Frame):
             card.grid(row=idx // cols, column=idx % cols, sticky="nsew", padx=6, pady=6)
 
     def _build_empty_state(self, message):
-        empty = tb.Frame(self._scroll.body, bootstyle="light", padding=40)
-        empty.pack(fill="x", padx=28, pady=20)
-        tb.Label(empty, text="⭐", font=("Segoe UI", 32)).pack()
-        tb.Label(empty, text=message, foreground=self._colors.secondary, justify="center").pack(pady=(10, 0))
+        StateBanner(self._scroll.body, message, icon="⭐").pack(
+            fill="x", padx=28, pady=20
+        )
 
     def _build_card(self, parent, uni):
         card = tb.Frame(parent, bootstyle="light", padding=16, cursor="hand2")
