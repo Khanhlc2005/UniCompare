@@ -27,7 +27,7 @@ class Sidebar(tb.Frame):
             font=("Segoe UI", 14, "bold")
         ).pack(fill="x", padx=18, pady=(24, 0))
         tb.Label(
-            self, text="ACADEMIC INSIGHTS", bootstyle="inverse-dark",
+            self, text="THÔNG TIN HỌC THUẬT", bootstyle="inverse-dark",
             font=("Segoe UI", 8)
         ).pack(fill="x", padx=18, pady=(0, 16))
         tb.Separator(self, bootstyle="secondary").pack(fill="x", padx=16, pady=(0, 12))
