@@ -17,9 +17,12 @@ Mọi trường trong seed mở được, không lỗi field thiếu (AC Issue 2
 from tkinter import messagebox
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
+from repositories.mongo_repo import MongoRepositoryError
 from services import watchlist_service, compare_service
 from views.components.scrollable_frame import ScrollableFrame
+from views.components.state_banner import StateBanner
 
 # Muc luc 5 phan — fraction tuong doi de scroll_to (ScrollableFrame)
 ANCHOR_ITEMS = [
@@ -83,15 +86,31 @@ class DetailPage(tb.Frame):
     # ─── Frame contract ──────────────────────────────────────────────────
 
     def refresh(self, university_id=None, **kwargs):
-        """AppShell gọi khi show_frame("detail", university_id=...)."""
-        if university_id is not None:
-            uni = self._controller.repo.get_by_id(university_id)
-            if uni:
-                self._data = uni
-        elif not self._data:
-            all_unis = self._controller.repo.get_all()
-            self._data = all_unis[0] if all_unis else {}
+        """AppShell gọi khi show_frame("detail", university_id=...).
+
+        Issue #54 (edge case mất kết nối Mongo): nếu repo lỗi giữa lúc đang
+        dùng app, KHÔNG để traceback văng ra - hiện StateBanner lỗi ngay
+        trong khung nội dung, giữ nguyên banner phía trên (không trắng cả
+        màn hình)."""
+        try:
+            if university_id is not None:
+                uni = self._controller.repo.get_by_id(university_id)
+                if uni:
+                    self._data = uni
+            elif not self._data:
+                all_unis = self._controller.repo.get_all()
+                self._data = all_unis[0] if all_unis else {}
+        except (MongoRepositoryError, PyMongoError) as exc:
+            self._render_error(exc)
+            return
         self._render()
+
+    def _render_error(self, exc):
+        for w in self._scroll.body.winfo_children():
+            w.destroy()
+        StateBanner.mongo_error(self._scroll.body, exc).pack(
+            fill="x", padx=28, pady=20
+        )
 
     def _on_back(self):
         """Quay lại màn hình trước đó trong navigation stack."""

@@ -23,15 +23,18 @@ xếp dọc, cùng áp lên toàn bộ danh sách 2-5 trường đang so sánh:
 """
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from repositories.mongo_repo import MongoRepositoryError
 from services import compare_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.compare_chip import CompareChip
+from views.components.state_banner import StateBanner
 
 # he so quy doi tuition_vnd (VND nguyen, vi du 91_000_000) ve don vi TRIEU
 # hien tren truc x cua chart hoc phi (dai thuc te ~91 den ~1.490 trieu)
@@ -90,7 +93,13 @@ class ComparePage(tb.Frame):
             font=("Segoe UI", 18, "bold")
         ).pack(anchor="w", padx=28, pady=(20, 12))
 
-        data = self._get_compare_data()
+        try:
+            data = self._get_compare_data()
+        except (MongoRepositoryError, PyMongoError) as exc:
+            StateBanner.mongo_error(self._scroll.body, exc).pack(
+                fill="x", padx=28, pady=20
+            )
+            return
 
         if len(data) < 2:
             self._build_empty_state(
@@ -113,12 +122,9 @@ class ComparePage(tb.Frame):
         self._build_chart_tab(tab_bieu_do, data)
 
     def _build_empty_state(self, message):
-        empty = tb.Frame(self._scroll.body, bootstyle="light", padding=40)
-        empty.pack(fill="x", padx=28, pady=20)
-        tb.Label(empty, text="📊", font=("Segoe UI", 32)).pack()
-        tb.Label(
-            empty, text=message, foreground=self._colors.secondary, justify="center"
-        ).pack(pady=(10, 0))
+        StateBanner(self._scroll.body, message, icon="📊").pack(
+            fill="x", padx=28, pady=20
+        )
 
     def _build_chip_row(self, data):
         row = tb.Frame(self._scroll.body)

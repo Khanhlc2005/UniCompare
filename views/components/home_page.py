@@ -9,8 +9,11 @@ Nâng cấp HomeView:
 """
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
+from repositories.mongo_repo import MongoRepositoryError
 from views.components.scrollable_frame import ScrollableFrame
+from views.components.state_banner import StateBanner
 
 FEATURES_DATA = [
     ("⭐", "Quan tâm", "Quản lý danh sách các trường bạn yêu thích", "favorite"),
@@ -50,11 +53,29 @@ class HomePage(tb.Frame):
         self._render()
 
     def _render(self):
-        """Cập nhật dữ liệu thật cho StatCard và Trường nổi bật."""
-        all_unis = self._controller.repo.get_all()
+        """Cập nhật dữ liệu thật cho StatCard và Trường nổi bật.
+
+        Issue #54 (edge case mất kết nối Mongo): gọi repo.get_all() TRƯỚC
+        khi đụng tới bất kỳ widget nào - nếu Mongo rớt kết nối giữa lúc
+        đang dùng app (không phải lúc mở app - trường hợp đó app_shell.py
+        đã tự fallback FakeRepo), nội dung cũ trên 2 container vẫn còn
+        nguyên vẹn cho tới khi ta chủ động thay bằng StateBanner lỗi, không
+        bao giờ để lại 1 vùng trắng dở dang.
+        """
+        try:
+            all_unis = self._controller.repo.get_all()
+        except (MongoRepositoryError, PyMongoError) as exc:
+            self._render_error(exc)
+            return
 
         self._render_stats(all_unis)
         self._render_featured(all_unis)
+
+    def _render_error(self, exc):
+        for container in (self._stats_container, self._featured_container):
+            for w in container.winfo_children():
+                w.destroy()
+        StateBanner.mongo_error(self._featured_container, exc).pack(fill="x")
 
     # ── 1. Header Banner ──────────────────────────────────────────────────
 
@@ -163,12 +184,10 @@ class HomePage(tb.Frame):
         ).pack(side="right")
 
         if not all_unis:
-            empty_card = tb.Frame(self._featured_container, bootstyle="light", padding=20)
-            empty_card.pack(fill="x")
-            tb.Label(
-                empty_card, text="Chưa có dữ liệu trường đại học.",
-                foreground=self._colors.secondary,
-            ).pack(anchor="w")
+            StateBanner(
+                self._featured_container, "Chưa có dữ liệu trường đại học.",
+                icon="🎓",
+            ).pack(fill="x")
             return
 
         # Lấy top 4 trường xếp hạng cao nhất (hoặc 4 trường đầu)
