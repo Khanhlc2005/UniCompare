@@ -208,7 +208,7 @@ class SearchView(ttk.Frame):
 | 2. Quan tâm | `WatchlistView` | Dropdown lọc quốc gia, card có nút bỏ lưu, **StickyCompareBar "X/5 đã chọn"** |
 | 3. Tìm kiếm | `SearchView` | Search bar + 3 dropdown (Quốc gia / Học phí / IELTS), card grid |
 | 4. Chi tiết | `DetailView` | Banner, 4 StatCard nổi bật, mục lục trái + nội dung phải |
-| 5–6. So sánh | `CompareView` | Chip trường (bỏ được), bảng highlight giá trị tốt nhất, tab Bảng/Biểu đồ |
+| 5–6. So sánh | `CompareView` | Chip trường (bỏ được), bảng highlight giá trị tốt nhất, 2 biểu đồ nằm ngang ngay dưới bảng (không tách tab) |
 | 7. Chatbot | `ChatbotView` | Thanh tiến trình wizard 4 bước + chat bubble + card kết quả kèm % phù hợp |
 | 8. Admin | `AdminView` | Treeview + form thêm/sửa cạnh bên, validate input, màn riêng ngoài luồng chính |
 

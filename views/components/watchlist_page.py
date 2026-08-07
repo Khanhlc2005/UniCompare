@@ -173,7 +173,7 @@ class WatchlistPage(tb.Frame):
         compare_var = tk.BooleanVar(value=uid in compare_service.get_compare_ids())
         chk = tb.Checkbutton(
             action_row, text="So sánh", variable=compare_var,
-            bootstyle="success-round-toggle",
+            bootstyle="success",
             command=lambda u_id=uid, var=compare_var: self._toggle_compare(u_id, var)
         )
         chk.pack(side="right")

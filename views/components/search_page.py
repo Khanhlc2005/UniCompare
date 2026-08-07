@@ -239,7 +239,7 @@ class SearchPage(tb.Frame):
         compare_var = tk.BooleanVar(value=uni["id"] in compare_service.get_compare_ids())
         tb.Checkbutton(
             card, text="So sánh", variable=compare_var,
-            bootstyle="success-round-toggle",
+            bootstyle="success",
             command=lambda uid=uni["id"], var=compare_var: self._toggle_compare(uid, var)
         ).pack(anchor="w")
 
