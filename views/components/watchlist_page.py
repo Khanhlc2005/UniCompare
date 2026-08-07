@@ -5,6 +5,9 @@ mục 5.1). `refresh()` được AppShell gọi mỗi lần frame được tkrai
 đọc lại watchlist_service/compare_service để dữ liệu luôn mới (VD vừa lưu
 trường ở màn Search). Vẫn dùng fake_repo qua controller.repo (tuần 1),
 chưa đổi mongo_repo.
+
+Filter quốc gia dùng ttk.Combobox (dropdown) thay vì PillFilter cũ - đồng
+bộ với Search (xem ARCHITECTURE.md mục 5.3 bản cập nhật).
 """
 
 import tkinter as tk
@@ -16,13 +19,14 @@ from pymongo.errors import PyMongoError
 from repositories.mongo_repo import MongoRepositoryError
 from services import watchlist_service, compare_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
-from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
 from views.components.state_banner import StateBanner
 
+ALL_LABEL = "Tất cả"
+
 
 class WatchlistPage(tb.Frame):
-    """Trang Quan tâm — card trường đã lưu + pill quốc gia + tick so sánh."""
+    """Trang Quan tâm — card trường đã lưu + dropdown quốc gia + tick so sánh."""
 
     def __init__(self, master, controller):
         super().__init__(master)
@@ -84,13 +88,20 @@ class WatchlistPage(tb.Frame):
             pack_opts={"fill": "x", "padx": 28, "pady": (0, 12)},
         )
 
-        # pill loc quoc gia lay tu chinh cac truong da luu (khong phai toan bo DB)
+        # dropdown loc quoc gia lay tu chinh cac truong da luu (khong phai toan bo DB)
         countries = sorted({uni["country"] for uni in all_data})
-        pill = PillFilter(
-            self._scroll.body, options=countries, active=self._active_country,
-            on_select=self._on_filter_country,
+        filter_var = tk.StringVar(value=self._active_country or ALL_LABEL)
+        combo = tb.Combobox(
+            self._scroll.body, textvariable=filter_var,
+            values=[ALL_LABEL] + countries, state="readonly", bootstyle="secondary",
         )
-        pill.pack(anchor="w", padx=28, pady=(0, 16))
+        combo.pack(anchor="w", padx=28, pady=(0, 16))
+        combo.bind(
+            "<<ComboboxSelected>>",
+            lambda e, v=filter_var: self._on_filter_country(
+                None if v.get() == ALL_LABEL else v.get()
+            )
+        )
 
         shown = [
             uni for uni in all_data
