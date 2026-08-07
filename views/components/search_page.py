@@ -21,11 +21,14 @@ import tkinter as tk
 from tkinter import messagebox
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
+from repositories.mongo_repo import MongoRepositoryError
 from services import university_service, compare_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
+from views.components.state_banner import StateBanner
 
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
@@ -96,6 +99,25 @@ class SearchPage(tb.Frame):
         self._render()
 
     def _render(self):
+        # Issue #54 (edge case mất kết nối Mongo): lấy hết dữ liệu cần TRƯỚC
+        # khi đụng widget nào. Nếu Mongo rớt kết nối giữa lúc đang dùng app,
+        # 3 holder giữ nguyên nội dung lần render trước (không xóa dở dang
+        # rồi bỏ trắng) - chỉ vùng kết quả được thay bằng StateBanner lỗi.
+        try:
+            countries = university_service.get_countries(self._controller.repo)
+            tuition_max = dict(TUITION_PILLS).get(self._active_tuition_label)
+            ielts_max = dict(IELTS_PILLS).get(self._active_ielts_label)
+            results = university_service.search(
+                self._controller.repo,
+                keyword=self._keyword_var.get(),
+                country=self._active_country,
+                tuition_max=tuition_max,
+                ielts_max=ielts_max,
+            )
+        except (MongoRepositoryError, PyMongoError) as exc:
+            self._render_error(exc)
+            return
+
         for w in self._compare_bar_holder.winfo_children():
             w.destroy()
         for w in self._filters_holder.winfo_children():
@@ -104,18 +126,7 @@ class SearchPage(tb.Frame):
             w.destroy()
 
         self._build_compare_bar()
-        self._build_filters()
-
-        tuition_max = dict(TUITION_PILLS).get(self._active_tuition_label)
-        ielts_max = dict(IELTS_PILLS).get(self._active_ielts_label)
-
-        results = university_service.search(
-            self._controller.repo,
-            keyword=self._keyword_var.get(),
-            country=self._active_country,
-            tuition_max=tuition_max,
-            ielts_max=ielts_max,
-        )
+        self._build_filters(countries)
 
         if not results:
             self._build_empty_state()
@@ -150,9 +161,12 @@ class SearchPage(tb.Frame):
     def _go_to_compare(self):
         self._controller.show_frame("compare")
 
-    def _build_filters(self):
-        countries = university_service.get_countries(self._controller.repo)
+    def _render_error(self, exc):
+        for w in self._results_holder.winfo_children():
+            w.destroy()
+        StateBanner.mongo_error(self._results_holder, exc).pack(fill="x", pady=20)
 
+    def _build_filters(self, countries):
         for title, options, active, handler in [
             ("Quốc gia", countries, self._active_country, self._on_country_select),
             ("Học phí", [l for l, _ in TUITION_PILLS], self._active_tuition_label, self._on_tuition_select),
@@ -167,13 +181,11 @@ class SearchPage(tb.Frame):
             ).pack(anchor="w", pady=(2, 10))
 
     def _build_empty_state(self):
-        empty = tb.Frame(self._results_holder, bootstyle="light", padding=40)
-        empty.pack(fill="x", pady=20)
-        tb.Label(empty, text="🔍", font=("Segoe UI", 32)).pack()
-        tb.Label(
-            empty, text="Không tìm thấy trường phù hợp với điều kiện đã chọn.",
-            foreground=self._colors.secondary
-        ).pack(pady=(10, 0))
+        StateBanner(
+            self._results_holder,
+            "Không tìm thấy trường phù hợp với điều kiện đã chọn.",
+            icon="🔍",
+        ).pack(fill="x", pady=20)
 
     def _build_card(self, parent, uni):
         card = tb.Frame(parent, bootstyle="light", padding=16, cursor="hand2")

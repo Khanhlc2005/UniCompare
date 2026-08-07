@@ -17,9 +17,13 @@ không tự khai màu rời.
 """
 
 import tkinter as tk
+import traceback
+from tkinter import messagebox
 
 import ttkbootstrap as tb
+from pymongo.errors import PyMongoError
 
+from repositories.mongo_repo import MongoRepositoryError
 from views.components.sidebar import Sidebar
 from views.components.home_page import HomePage
 from views.components.detail_page import DetailPage
@@ -164,3 +168,33 @@ class AppShell(tb.Window):
         else:
             prev_name = fallback
         self.show_frame(prev_name, is_back=True)
+
+    def report_callback_exception(self, exc, val, tb_obj):
+        """Issue #54 (edge case mất kết nối Mongo): lưới an toàn cuối cùng.
+
+        Tkinter tự gọi hàm này thay vì để lỗi văng thẳng ra console mỗi khi
+        một callback (click nút, refresh() lúc tkraise()...) ném exception
+        không được bắt cục bộ. Các View NÊN tự bắt MongoRepositoryError ở
+        chỗ gọi repo (xem StateBanner.mongo_error) để hiện thông báo ngay
+        trong màn hình thay vì mất nội dung cũ; hàm này chỉ là lưới an toàn
+        cho phần chưa/không tự bắt được (VD nút Bỏ lưu/Thêm vào so sánh khi
+        Mongo vừa rớt giữa chừng) — mục tiêu duy nhất: KHÔNG BAO GIỜ để lộ
+        traceback thô cho người dùng (config.py mục 7).
+        """
+        # log day du ra console cho dev debug, nguoi dung chi thay hop thoai gon
+        traceback.print_exception(exc, val, tb_obj)
+
+        if isinstance(val, (MongoRepositoryError, PyMongoError)):
+            messagebox.showerror(
+                "Mất kết nối MongoDB",
+                "Không thể kết nối hoặc thao tác với MongoDB Atlas.\n"
+                f"{val}\n\n"
+                "Kiểm tra mạng / MONGO_URI rồi thử lại.",
+                parent=self,
+            )
+        else:
+            messagebox.showerror(
+                "Đã có lỗi xảy ra",
+                f"{val}\n\nVui lòng thử lại thao tác vừa rồi.",
+                parent=self,
+            )
