@@ -78,27 +78,33 @@ def test_go_khong_phan_biet_hoa_thuong(repo):
     assert len(ket_qua) == 1
     assert ket_qua[0]["name"] == "University of Oxford"# ─── Lọc quốc gia / học phí / IELTS (đẩy thêm cho Issue 2.6) ───
 def test_loc_theo_quoc_gia(repo):
-    ket_qua = university_service.search(repo, country="UK")
-    assert len(ket_qua) == 2
-    assert all(uni["country"] == "UK" for uni in ket_qua)
+    # data thuc trong seed_data.json ghi day du "United Kingdom", khong phai "UK"
+    ket_qua = university_service.search(repo, country="United Kingdom")
+    assert len(ket_qua) == 6
+    assert all(uni["country"] == "United Kingdom" for uni in ket_qua)
 
 
 def test_loc_theo_hoc_phi_toi_da(repo):
     ket_qua = university_service.search(repo, tuition_max=30000)
-    assert all(uni["tuition"] <= 30000 for uni in ket_qua)
+    # seed_data.json dung field tuition_per_year -> phai doc qua lay_hoc_phi()
+    assert all(university_service.lay_hoc_phi(uni) <= 30000 for uni in ket_qua)
     assert len(ket_qua) > 0
 
 
 def test_loc_theo_ielts_toi_da(repo):
     ket_qua = university_service.search(repo, ielts_max=6.5)
-    assert all(uni["ielts"] <= 6.5 for uni in ket_qua)
+    assert all(university_service.lay_ielts(uni) <= 6.5 for uni in ket_qua)
     assert len(ket_qua) > 0
 
 
 def test_ket_hop_ca_3_dieu_kien_pill_cung_luc(repo):
-    ket_qua = university_service.search(repo, country="UK", tuition_max=40000, ielts_max=7.5)
+    ket_qua = university_service.search(
+        repo, country="United Kingdom", tuition_max=40000, ielts_max=7.5
+    )
     assert all(
-        uni["country"] == "UK" and uni["tuition"] <= 40000 and uni["ielts"] <= 7.5
+        uni["country"] == "United Kingdom"
+        and university_service.lay_hoc_phi(uni) <= 40000
+        and university_service.lay_ielts(uni) <= 7.5
         for uni in ket_qua
     )
     assert len(ket_qua) > 0
@@ -107,7 +113,8 @@ def test_ket_hop_ca_3_dieu_kien_pill_cung_luc(repo):
 def test_get_countries_tra_ve_danh_sach_khong_trung(repo):
     countries = university_service.get_countries(repo)
     assert len(countries) == len(set(countries))
-    assert "USA" in countries
+    # seed_data.json hien tai khong co truong nao o USA, dung 1 quoc gia co that
+    assert "Japan" in countries
 
 
 # ─── Fallback schema chuan (tuition_per_year/ielts_min) - tranh loi am tham
