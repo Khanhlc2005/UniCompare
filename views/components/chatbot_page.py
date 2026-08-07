@@ -16,7 +16,7 @@ from tkinter import messagebox
 
 import ttkbootstrap as tb
 
-from services import recommend_service, wizard_service
+from services import recommend_service, wizard_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
 
 
@@ -531,8 +531,10 @@ class ChatbotPage(tb.Frame):
             tuition = uni.get("tuition_per_year")
             currency = uni.get("currency", "USD")
             t_str = f"{tuition:,.0f} {currency}" if tuition else "N/A"
-            ielts_req = uni.get("ielts_min", "N/A")
-            gpa_req = uni.get("gpa_min", "N/A")
+            ielts_val = university_service.lay_ielts(uni)
+            gpa_val = university_service.lay_gpa(uni)
+            ielts_req = ielts_val if ielts_val is not None else "N/A"
+            gpa_req = gpa_val if gpa_val is not None else "N/A"
 
             stats_txt = f"GPA min: {gpa_req}  •  IELTS min: {ielts_req}  •  Học phí: {t_str}/năm"
             tb.Label(card, text=stats_txt, foreground=self._colors.secondary, font=("Segoe UI", 9)).pack(anchor="w", pady=(0, 8))

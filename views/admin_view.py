@@ -70,11 +70,14 @@ class AdminView(ttk.Frame):
     # UI
     # ------------------------------------------------------------------
     def _configure_style(self) -> None:
+        # KHONG duoc goi style.theme_use() o day - ttk.Style la singleton
+        # toan cuc ca process (dung ca khi AdminView mo trong Toplevel rieng),
+        # doi theme se de len ca theme "flatly" AppShell da khai bao 1 lan
+        # duy nhat (ARCHITECTURE.md §5.3), lam mat mau nen xanh sidebar/toan
+        # app luon ke ca sau khi dong AdminView (bug da bao - fix bang cach
+        # bo theme_use, chi dinh nghia style rieng ben duoi la du, khong can
+        # doi base theme).
         style = ttk.Style(self)
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
 
         style.configure("Admin.TFrame", background="#F5F7FB")
         style.configure(

@@ -1,11 +1,12 @@
 """Trang Tìm kiếm (SearchPage) — Issue 1.5, dùng university_service (Issue 1.4).
 
 Đúng Frame contract (ARCHITECTURE.md mục 5.1): kế thừa thẳng ttk.Frame,
-constructor (master, controller), có refresh(). Pill filter dùng lại
-PillFilter đã có sẵn (ARCHITECTURE.md mục 5.3: ttk.Radiobutton
-bootstyle="toolbutton"), KHÔNG tự vẽ lại bằng tk.Canvas.
+constructor (master, controller), có refresh(). Filter dùng ttk.Combobox
+(dropdown, state="readonly") - nhóm đã họp lại và đổi khỏi PillFilter cũ,
+xem ARCHITECTURE.md mục 5.3 bản cập nhật. Watchlist cũng đổi tương tự để
+2 màn dùng chung 1 kiểu widget filter.
 
-Bố cục theo wireframe 3: search bar -> 3 nhóm pill (Quốc gia / Học phí /
+Bố cục theo wireframe 3: search bar -> 3 dropdown (Quốc gia / Học phí /
 IELTS, kết hợp AND với nhau) -> card grid kết quả.
 
 Dữ liệu: dùng controller.repo (fake_repo ở tuần 1). Khi Issue 2.3 đổi sang
@@ -26,9 +27,10 @@ from pymongo.errors import PyMongoError
 from repositories.mongo_repo import MongoRepositoryError
 from services import university_service, compare_service
 from views.components.scrollable_frame import ScrollableFrame
-from views.components.pill_filter import PillFilter
 from views.components.compare_bar import CompareBar
 from views.components.state_banner import StateBanner
+
+ALL_LABEL = "Tất cả"
 
 # (nhãn hiển thị, tuition_max) — None = không giới hạn, không nằm trong pill
 TUITION_PILLS = [
@@ -47,7 +49,7 @@ IELTS_PILLS = [
 PAGE_SIZE = 9
 
 class SearchPage(tb.Frame):
-    """Trang Tìm kiếm — search bar + 3 nhóm pill filter + card grid."""
+    """Trang Tìm kiếm — search bar + 3 dropdown filter + card grid."""
 
     def __init__(self, master, controller):
         super().__init__(master)
@@ -172,13 +174,27 @@ class SearchPage(tb.Frame):
             ("Học phí", [l for l, _ in TUITION_PILLS], self._active_tuition_label, self._on_tuition_select),
             ("IELTS", [l for l, _ in IELTS_PILLS], self._active_ielts_label, self._on_ielts_select),
         ]:
+            group = tb.Frame(self._filters_holder)
+            group.pack(side="left", padx=(0, 12), fill="x", expand=True)
+
             tb.Label(
-                self._filters_holder, text=title, foreground=self._colors.secondary,
+                group, text=title, foreground=self._colors.secondary,
                 font=("Segoe UI", 8, "bold")
             ).pack(anchor="w")
-            PillFilter(
-                self._filters_holder, options=options, active=active, on_select=handler,
-            ).pack(anchor="w", pady=(2, 10))
+
+            var = tk.StringVar(value=active or ALL_LABEL)
+            combo = tb.Combobox(
+                group, textvariable=var, values=[ALL_LABEL] + list(options),
+                state="readonly", bootstyle="secondary",
+            )
+            combo.pack(fill="x", pady=(2, 0))
+            # StringVar cua combo la bien local trong vong lap, phai bind theo
+            # tham so mac dinh (v=var) chu khong duoc dung truc tiep var trong
+            # lambda - khong thi 3 combo se cung tro ve bien var cua lan lap cuoi
+            combo.bind(
+                "<<ComboboxSelected>>",
+                lambda e, v=var, h=handler: h(None if v.get() == ALL_LABEL else v.get())
+            )
 
     def _build_empty_state(self):
         StateBanner(
@@ -206,8 +222,8 @@ class SearchPage(tb.Frame):
         tuition = university_service.lay_hoc_phi(uni)
         tuition_text = f"${tuition:,.0f}" if tuition is not None else "N/A"
         ielts = university_service.lay_ielts(uni)
-        gpa = uni.get("gpa_min", uni.get("gpa", "N/A"))
-        stats_text = f"GPA {gpa}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
+        gpa = university_service.lay_gpa(uni)
+        stats_text = f"GPA {gpa if gpa is not None else 'N/A'}  •  IELTS {ielts if ielts is not None else 'N/A'}  •  {tuition_text}"
         stats_lbl = tb.Label(card, text=stats_text, foreground=self._colors.secondary)
         stats_lbl.pack(anchor="w", pady=(0, 8))
 
@@ -223,7 +239,7 @@ class SearchPage(tb.Frame):
         compare_var = tk.BooleanVar(value=uni["id"] in compare_service.get_compare_ids())
         tb.Checkbutton(
             card, text="So sánh", variable=compare_var,
-            bootstyle="success-round-toggle",
+            bootstyle="success",
             command=lambda uid=uni["id"], var=compare_var: self._toggle_compare(uid, var)
         ).pack(anchor="w")
 

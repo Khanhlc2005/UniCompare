@@ -79,7 +79,7 @@ unicompare/
 │   ├── compare_view.py      # gồm 2 tab: bảng + biểu đồ
 │   ├── chatbot_view.py
 │   ├── admin_view.py
-│   └── components/          # widget dùng chung: UniversityCard, PillFilter,
+│   └── components/          # widget dùng chung: UniversityCard,
 │                            # StatCard, StickyCompareBar, ChatBubble
 ├── services/
 │   ├── university_service.py
@@ -205,10 +205,10 @@ class SearchView(ttk.Frame):
 | Trang wireframe | View | Điểm chính phải làm đúng |
 | --- | --- | --- |
 | 1. Trang chủ | `HomeView` | 3 StatCard tổng quan, lối tắt, danh sách trường nổi bật dạng card |
-| 2. Quan tâm | `WatchlistView` | PillFilter quốc gia, card có nút bỏ lưu, **StickyCompareBar "X/5 đã chọn"** |
-| 3. Tìm kiếm | `SearchView` | Search bar + 3 nhóm pill (Quốc gia / Học phí / IELTS), card grid |
+| 2. Quan tâm | `WatchlistView` | Dropdown lọc quốc gia, card có nút bỏ lưu, **StickyCompareBar "X/5 đã chọn"** |
+| 3. Tìm kiếm | `SearchView` | Search bar + 3 dropdown (Quốc gia / Học phí / IELTS), card grid |
 | 4. Chi tiết | `DetailView` | Banner, 4 StatCard nổi bật, mục lục trái + nội dung phải |
-| 5–6. So sánh | `CompareView` | Chip trường (bỏ được), bảng highlight giá trị tốt nhất, tab Bảng/Biểu đồ |
+| 5–6. So sánh | `CompareView` | Chip trường (bỏ được), bảng highlight giá trị tốt nhất, 2 biểu đồ nằm ngang ngay dưới bảng (không tách tab) |
 | 7. Chatbot | `ChatbotView` | Thanh tiến trình wizard 4 bước + chat bubble + card kết quả kèm % phù hợp |
 | 8. Admin | `AdminView` | Treeview + form thêm/sửa cạnh bên, validate input, màn riêng ngoài luồng chính |
 
@@ -221,9 +221,12 @@ Detail đều có nút thêm so sánh) → đặt trong `compare_service`
 - Theme thống nhất toàn app, khai báo **một chỗ duy nhất** trong `app_shell.py`:
   `ttkbootstrap.Window(themename="flatly")` (nhóm có thể vote theme khác, nhưng đổi 1 dòng).
 - Dùng `bootstyle` chuẩn: `primary` cho hành động chính, `success` cho highlight
-  giá trị tốt nhất trong bảng so sánh, `secondary/outline` cho pill filter chưa chọn.
-- Pill filter = `ttk.Radiobutton`/`Checkbutton` với `bootstyle="toolbutton"` — đúng dáng wireframe.
-- Widget lặp lại ở nhiều màn (card trường, stat card, pill, thanh dính đáy, chat bubble)
+  giá trị tốt nhất trong bảng so sánh, `secondary` cho dropdown filter.
+- Filter quốc gia/học phí/IELTS ở Search + Watchlist dùng `ttk.Combobox`
+  (`state="readonly"`, `bootstyle="secondary"`) — đổi từ PillFilter
+  (`ttk.Radiobutton`/`Checkbutton` bootstyle="toolbutton") ban đầu, cả nhóm
+  đã thống nhất lại đổi sang dropdown cho gọn, áp dụng đồng bộ cả 2 màn.
+- Widget lặp lại ở nhiều màn (card trường, stat card, thanh dính đáy, chat bubble)
   bắt buộc viết trong `views/components/` — cấm mỗi người tự vẽ một kiểu.
 
 ### 5.4. Nhúng matplotlib (né rủi ro threading — mục 10 tài liệu)

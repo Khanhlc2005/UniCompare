@@ -11,9 +11,14 @@ logic xác định "tốt nhất" nằm ở compare_service.xac_dinh_tot_nhat - 
 sẵn từ Issue 1.8 qua CompareChip.on_remove, giữ nguyên). CHƯA làm
 StickyCompareBar (Issue 2.9).
 
-Issue 3.3 (chốt §5.2.1 — thay wireframe 6): tab "Biểu đồ" cạnh tab "Bảng"
-(ttk.Notebook). ĐÃ BỎ dropdown chọn tiêu chí - luôn hiện CỐ ĐỊNH 2 chart
-xếp dọc, cùng áp lên toàn bộ danh sách 2-5 trường đang so sánh:
+Issue 3.3 (chốt §5.2.1, đợt polish sau đổi lại bố cục theo mock-up mới):
+KHÔNG còn tách tab "Bảng"/"Biểu đồ" nữa - gộp chung 1 trang: bảng tiêu chí
+truớc, "Trực quan hoá" (2 chart) ngay dưới, 2 chart nằm NGANG hàng (trước
+xếp dọc). Mỗi trường có 1 màu cố định (chấm màu trước tên trong bảng,
+dùng lại đúng màu đó cho cột/bar cua truong trong chart hoc phi) - lay tu
+bang mau categorical co dinh MAU_THEO_THU_TU, KHONG tu bia mau/doi thu tu
+theo filter (xem dataviz skill: "color follows the entity, never rank").
+Van giu dung 2 chart cu, khong doi field/logic tinh toan:
   1. Học phí/năm (tuition_vnd, quy về TRIỆU VND) - bar NGANG (tên trường
      dài, bar đứng phải xoay nhãn khó đọc).
   2. Yêu cầu ngoại ngữ (ielts_min + toefl_min) - grouped bar, 2 trục y
@@ -40,6 +45,11 @@ from views.components.state_banner import StateBanner
 # hien tren truc x cua chart hoc phi (dai thuc te ~91 den ~1.490 trieu)
 TRIEU_VND = 1_000_000
 
+# mau categorical co dinh theo THU TU truong duoc chon (khong theo rank/gia
+# tri) - lay 5 slot dau cua bang mau da validate CVD-safe (dataviz skill,
+# references/palette.md), du cho MAX_COMPARE=5
+MAU_THEO_THU_TU = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
+
 # tieu chi hien trong bang - key phai khop CAC_TIEU_CHI_SO trong
 # compare_service.py de tra cuu ket qua highlight. "ranking" chi co o schema
 # chuan/seed_data.json, fake_repo hien chua co field nay nen se hien N/A cho
@@ -62,7 +72,7 @@ def _doc_gia_tri_hien_thi(uni, field):
 
 
 class ComparePage(tb.Frame):
-    """Trang So sánh — chip trường đã chọn + tab Bảng/Biểu đồ."""
+    """Trang So sánh — chip trường đã chọn + bảng tiêu chí + 2 chart (nằm chung 1 trang)."""
 
     def __init__(self, master, controller):
         super().__init__(master)
@@ -108,18 +118,16 @@ class ComparePage(tb.Frame):
             )
             return
 
+        # moi truong 1 mau co dinh theo thu tu chon (khong doi khi filter/
+        # sap xep khac) - dung chung giua bang va chart hoc phi ben duoi
+        mau_theo_truong = {
+            uni["id"]: MAU_THEO_THU_TU[i % len(MAU_THEO_THU_TU)]
+            for i, uni in enumerate(data)
+        }
+
         self._build_chip_row(data)
-
-        notebook = tb.Notebook(self._scroll.body)
-        notebook.pack(fill="both", expand=True, padx=28, pady=(0, 24))
-
-        tab_bang = tb.Frame(notebook)
-        tab_bieu_do = tb.Frame(notebook)
-        notebook.add(tab_bang, text="Bảng")
-        notebook.add(tab_bieu_do, text="Biểu đồ")
-
-        self._build_table(tab_bang, data)
-        self._build_chart_tab(tab_bieu_do, data)
+        self._build_table(self._scroll.body, data, mau_theo_truong)
+        self._build_chart_section(self._scroll.body, data, mau_theo_truong)
 
     def _build_empty_state(self, message):
         StateBanner(self._scroll.body, message, icon="📊").pack(
@@ -136,9 +144,9 @@ class ComparePage(tb.Frame):
             )
             chip.pack(side="left", padx=(0, 8), pady=4)
 
-    def _build_table(self, parent, data):
+    def _build_table(self, parent, data, mau_theo_truong):
         table = tb.Frame(parent, bootstyle="light", padding=16)
-        table.pack(fill="both", expand=True, padx=16, pady=16)
+        table.pack(fill="x", padx=28, pady=(0, 16))
 
         # cot dau la ten tieu chi, cac cot sau la tung truong dang chon
         for col in range(len(data) + 1):
@@ -150,10 +158,18 @@ class ComparePage(tb.Frame):
         ).grid(row=0, column=0, sticky="w", padx=8, pady=8)
 
         for col_idx, uni in enumerate(data, start=1):
+            header = tb.Frame(table)
+            header.grid(row=0, column=col_idx, sticky="w", padx=8, pady=8)
+            # cham mau rieng cua truong - dung lai dung mau nay cho bar hoc
+            # phi cua truong trong chart ben duoi, khong doi mau theo filter
             tb.Label(
-                table, text=uni.get("name", ""), font=("Segoe UI", 10, "bold"),
-                foreground=self._colors.primary, wraplength=180, justify="left"
-            ).grid(row=0, column=col_idx, sticky="w", padx=8, pady=8)
+                header, text="●", foreground=mau_theo_truong[uni["id"]],
+                font=("Segoe UI", 10, "bold")
+            ).pack(side="left", padx=(0, 4))
+            tb.Label(
+                header, text=uni.get("name", ""), font=("Segoe UI", 10, "bold"),
+                foreground=self._colors.primary, wraplength=170, justify="left"
+            ).pack(side="left")
 
         # logic xac dinh "tot nhat" nam o service layer (Issue 2.8), View chi
         # doc ket qua ve to mau, khong tu so sanh gia tri trong file nay
@@ -182,39 +198,50 @@ class ComparePage(tb.Frame):
                     font=("Segoe UI", 10, "bold") if la_tot_nhat else ("Segoe UI", 10),
                 ).grid(row=row_idx, column=col_idx, sticky="w", padx=8, pady=8)
 
-    # ─── tab Biểu đồ (Issue 3.3, chốt §5.2.1) ─────────────────────
-    def _build_chart_tab(self, parent, data):
-        chart_frame = tb.Frame(parent, padding=16)
-        chart_frame.pack(fill="both", expand=True)
+    # ─── Trực quan hoá (Issue 3.3, chốt §5.2.1 - gộp chung trang, 2 chart
+    # nam ngang thay vi tach tab/xep doc nhu ban truoc) ────────────
+    def _build_chart_section(self, parent, data, mau_theo_truong):
+        tb.Label(
+            parent, text="TRỰC QUAN HOÁ", bootstyle="secondary",
+            font=("Segoe UI", 9, "bold")
+        ).pack(anchor="w", padx=28, pady=(4, 8))
 
-        # 1 Figure duy nhat, 2 subplot xep doc (khong dung matplotlib.pyplot
-        # de tranh pyplot giu figure trong state global toan cuc khi nhung
-        # vao Tkinter - rui ro leak bo nho khi mo/dong nhieu lan). Chi 1
-        # FigureCanvasTkAgg, 1 lan draw_idle() o cuoi ham (khong tao 2
-        # canvas rieng cho 2 chart).
-        fig = Figure(figsize=(7, 7.6), dpi=100)
-        ax_hoc_phi, ax_ngoai_ngu = fig.subplots(2, 1)
+        chart_frame = tb.Frame(parent, bootstyle="light", padding=16)
+        chart_frame.pack(fill="both", expand=True, padx=28, pady=(0, 24))
 
-        self._ve_chart_hoc_phi(ax_hoc_phi, data)
+        # 1 Figure duy nhat (khong dung matplotlib.pyplot de tranh giu
+        # figure trong state global toan cuc khi nhung vao Tkinter - rui ro
+        # leak bo nho khi mo/dong nhieu lan). 2 subplot nam NGANG (1 hang, 2
+        # cot) thay vi xep doc nhu truoc, khop bo cuc "2 the canh nhau".
+        fig = Figure(figsize=(13, 4.4), dpi=100)
+        ax_hoc_phi, ax_ngoai_ngu = fig.subplots(1, 2)
+
+        self._ve_chart_hoc_phi(ax_hoc_phi, data, mau_theo_truong)
         self._ve_chart_ngoai_ngu(ax_ngoai_ngu, data)
 
-        fig.tight_layout(h_pad=3.5)
+        fig.tight_layout(w_pad=4)
 
         canvas = FigureCanvasTkAgg(fig, master=chart_frame)
         canvas.get_tk_widget().pack(fill="both", expand=True)
         canvas.draw_idle()
+        return canvas
 
-    def _ve_chart_hoc_phi(self, ax, data):
+    def _ve_chart_hoc_phi(self, ax, data, mau_theo_truong):
         """Chart 1 (§5.2.1): học phí/năm - tuition_vnd quy đổi triệu VND,
         bar NGANG vì tên trường dài. Trường thiếu tuition_vnd bị loại khỏi
-        chart, tuyệt đối không vẽ cột 0."""
-        cap = [(uni.get("name", ""), uni.get("tuition_vnd")) for uni in data]
-        ten = [n for n, v in cap if isinstance(v, (int, float))]
-        trieu = [v / TRIEU_VND for n, v in cap if isinstance(v, (int, float))]
-        thieu = [n for n, v in cap if not isinstance(v, (int, float))]
+        chart, tuyệt đối không vẽ cột 0. Moi bar 1 mau rieng theo truong,
+        dung chung mau_theo_truong voi cham mau trong bang o tren."""
+        cap = [
+            (uni.get("name", ""), uni.get("tuition_vnd"), mau_theo_truong[uni["id"]])
+            for uni in data
+        ]
+        ten = [n for n, v, _ in cap if isinstance(v, (int, float))]
+        trieu = [v / TRIEU_VND for n, v, _ in cap if isinstance(v, (int, float))]
+        mau = [m for n, v, m in cap if isinstance(v, (int, float))]
+        thieu = [n for n, v, _ in cap if not isinstance(v, (int, float))]
 
         if trieu:
-            ax.barh(ten, trieu, color="#2F5DFF")
+            ax.barh(ten, trieu, color=mau)
             ax.invert_yaxis()
             ax.set_xlabel("Triệu VND")
         else:
@@ -276,13 +303,15 @@ class ComparePage(tb.Frame):
 
         ax_toefl = ax.twinx()
 
+        # mau slot 1/3 cua bang mau categorical (khac voi mau_theo_truong o
+        # chart hoc phi - o day mau phan biet IELTS/TOEFL, khong phai truong)
         ax.bar(
             [xi - rong / 2 for xi in x], diem_ielts, width=rong,
-            color="#2F5DFF", label="IELTS",
+            color="#2a78d6", label="IELTS",
         )
         ax_toefl.bar(
             [xi + rong / 2 for xi in x], diem_toefl, width=rong,
-            color="#00A896", label="TOEFL",
+            color="#1baf7a", label="TOEFL",
         )
 
         # truc co dinh, khong de matplotlib tu scale (§5.2.1)

@@ -38,7 +38,7 @@ from views.components.chatbot_page import ChatbotPage
 from views.admin_view import open_admin_window
 
 
-APP_TITLE = "UniCompare — Academic Insights"
+APP_TITLE = "UniCompare — Thông tin học thuật"
 MIN_WIDTH = 1100
 MIN_HEIGHT = 700
 
