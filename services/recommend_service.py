@@ -233,7 +233,7 @@ def _goi_ai_that(profile: dict, top_n_results: list[dict]) -> list[dict] | None:
         '[{"university_id": "...", "score": 85, "explanation": "Lời giải thích ngắn 1-2 câu..."}, ...]'
     )
 
-    models_to_try = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-pro-latest", "gemma-4-26b-a4b-it"]
+    models_to_try = ["gemini-1.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-pro-latest", "gemma-4-26b-a4b-it"]
 
     for model_name in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -341,7 +341,7 @@ def chat_with_ai(user_question: str, profile: dict, all_unis: list[dict]) -> str
         "Hãy trả lời bằng tiếng Việt thân thiện, rõ ràng (2-4 câu hoặc gạch đầu dòng), tư vấn dựa trên thông tin trường và hồ sơ sinh viên."
     )
 
-    models_to_try = ["gemini-flash-latest", "gemini-2.0-flash", "gemma-4-26b-a4b-it"]
+    models_to_try = ["gemini-1.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemma-4-26b-a4b-it"]
 
     for model_name in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
