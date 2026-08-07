@@ -17,6 +17,7 @@ Chạy kiểm tra thủ công:
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from bson import ObjectId
@@ -149,7 +150,10 @@ class MongoUniversityRepository:
 
         keyword = keyword.strip()
         if keyword:
-            regex = {"$regex": keyword, "$options": "i"}
+            # phai escape truoc khi nhet vao $regex - khong thi ky tu nhu
+            # "(" ")" trong ten truong/quoc gia bi Mongo hieu la regex group
+            # chu khong phai ky tu thuong, khop sai/thieu ket qua
+            regex = {"$regex": re.escape(keyword), "$options": "i"}
             filters.append(
                 {
                     "$or": [
@@ -164,7 +168,7 @@ class MongoUniversityRepository:
 
         if country and country.strip():
             filters.append(
-                {"country": {"$regex": f"^{country.strip()}$", "$options": "i"}}
+                {"country": {"$regex": f"^{re.escape(country.strip())}$", "$options": "i"}}
             )
 
         query: dict[str, Any]

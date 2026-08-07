@@ -119,7 +119,16 @@ class ComparePage(tb.Frame):
         notebook.add(tab_bieu_do, text="Biểu đồ")
 
         self._build_table(tab_bang, data)
-        self._build_chart_tab(tab_bieu_do, data)
+        chart_canvas = self._build_chart_tab(tab_bieu_do, data)
+
+        # nho: tab "Biểu đồ" khong phai tab mac dinh (Notebook chon tab_bang
+        # truoc), nen luc FigureCanvasTkAgg ve lan dau frame cua no chua duoc
+        # Tk "map" (chua co kich thuoc that) -> hinh bi trang/mat. Ve lai khi
+        # doi tab thi moi hien dung.
+        notebook.bind(
+            "<<NotebookTabChanged>>",
+            lambda e: chart_canvas.draw_idle()
+        )
 
     def _build_empty_state(self, message):
         StateBanner(self._scroll.body, message, icon="📊").pack(
@@ -203,6 +212,7 @@ class ComparePage(tb.Frame):
         canvas = FigureCanvasTkAgg(fig, master=chart_frame)
         canvas.get_tk_widget().pack(fill="both", expand=True)
         canvas.draw_idle()
+        return canvas
 
     def _ve_chart_hoc_phi(self, ax, data):
         """Chart 1 (§5.2.1): học phí/năm - tuition_vnd quy đổi triệu VND,
