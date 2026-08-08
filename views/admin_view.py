@@ -5,6 +5,9 @@ import tkinter as tk
 from dataclasses import dataclass
 from tkinter import messagebox, ttk
 from typing import Any, Protocol
+from datetime import datetime
+
+VALID_CURRENCIES = {"CNY", "JPY", "KRW", "USD", "GBP"}
 
 
 Document = dict[str, Any]
@@ -55,9 +58,11 @@ class AdminView(ttk.Frame):
     TREE_COLUMNS = (
         "name",
         "country",
-        "gpa",
-        "ielts",
-        "tuition",
+        "gpa_min",
+        "ielts_min",
+        "tuition_per_year",
+        "currency",
+        "ranking",
     )
 
     def __init__(
@@ -229,16 +234,21 @@ class AdminView(ttk.Frame):
         headings = {
             "name": "Tên trường",
             "country": "Quốc gia",
-            "gpa": "GPA",
-            "ielts": "IELTS",
-            "tuition": "Học phí",
+            "gpa_min": "GPA",
+            "ielts_min": "IELTS",
+            "tuition_per_year": "Học phí",
+            "currency": "Tiền tệ",
+            "ranking": "Xếp hạng",
         }
+
         widths = {
-            "name": 260,
+            "name": 250,
             "country": 120,
-            "gpa": 70,
-            "ielts": 70,
-            "tuition": 105,
+            "gpa_min": 70,
+            "ielts_min": 70,
+            "tuition_per_year": 105,
+            "currency": 70,
+            "ranking": 80,
         }
 
         for column in self.TREE_COLUMNS:
@@ -397,9 +407,11 @@ class AdminView(ttk.Frame):
                     values=(
                         self._display_value(document.get("name", "")),
                         self._display_value(document.get("country", "")),
-                        self._display_value(document.get("gpa", "")),
-                        self._display_value(document.get("ielts", "")),
-                        self._format_tuition(document.get("tuition", "")),
+                        self._display_value(document.get("gpa_min", "")),
+                        self._display_value(document.get("ielts_min", "")),
+                        self._format_tuition(document.get("tuition_per_year", "")),
+                        self._display_value(document.get("currency", "")),
+                        self._display_value(document.get("ranking", "")),
                     ),
                     tags=(document_id,),
                 )
@@ -469,34 +481,108 @@ class AdminView(ttk.Frame):
 
         if not name:
             raise ValueError("Tên trường là trường bắt buộc.")
+
         if not country:
             raise ValueError("Quốc gia là trường bắt buộc.")
 
-        gpa = self._to_optional_float(self.form_vars["gpa"].get(), "GPA")
-        ielts = self._to_optional_float(self.form_vars["ielts"].get(), "IELTS tối thiểu")
-        tuition = self._to_optional_float(self.form_vars["tuition"].get(), "Học phí")
+        gpa_min = self._to_optional_float(
+            self.form_vars["gpa_min"].get(),
+            "GPA tối thiểu",
+        )
 
-        if gpa is not None and gpa > 4:
+        ielts_min = self._to_optional_float(
+            self.form_vars["ielts_min"].get(),
+            "IELTS tối thiểu",
+        )
+
+        toefl_min = self._to_optional_float(
+            self.form_vars["toefl_min"].get(),
+            "TOEFL tối thiểu",
+        )
+
+        tuition_per_year = self._to_optional_float(
+            self.form_vars["tuition_per_year"].get(),
+            "Học phí mỗi năm",
+        )
+
+        ranking = self._to_optional_float(
+            self.form_vars["ranking"].get(),
+            "Xếp hạng",
+        )
+
+        if gpa_min is not None and gpa_min > 4:
             raise ValueError("GPA phải nằm trong khoảng 0 đến 4.")
-        if ielts is not None and ielts > 9:
+
+        if ielts_min is not None and ielts_min > 9:
             raise ValueError("IELTS phải nằm trong khoảng 0 đến 9.")
+
+        if toefl_min is not None and toefl_min > 120:
+            raise ValueError("TOEFL phải nằm trong khoảng 0 đến 120.")
+
+        if ranking is not None:
+            if ranking < 1:
+                raise ValueError("Xếp hạng phải lớn hơn hoặc bằng 1.")
+
+            if not ranking.is_integer():
+                raise ValueError("Xếp hạng phải là số nguyên.")
+
+            ranking = int(ranking)
+
+        currency = self.form_vars["currency"].get().strip().upper()
+
+        if currency and currency not in VALID_CURRENCIES:
+            raise ValueError(
+                "Đơn vị tiền tệ phải là một trong: "
+                "CNY, JPY, KRW, USD, GBP."
+            )
+
+        deadline = self.form_vars["deadline"].get().strip()
+
+        if deadline:
+            try:
+                datetime.strptime(deadline, "%Y-%m-%d")
+            except ValueError as exc:
+                raise ValueError(
+                    "Hạn nộp hồ sơ phải đúng định dạng YYYY-MM-DD."
+                ) from exc
+
+        majors_raw = self.form_vars["majors"].get().strip()
+
+        majors = [
+            major.strip()
+            for major in majors_raw.split(",")
+            if major.strip()
+        ]
 
         payload: Document = {
             "name": name,
             "country": country,
-            "description": self.form_vars["description"].get().strip(),
+            "currency": currency,
+            "deadline": deadline,
+            "overview": self.form_vars["overview"].get().strip(),
         }
 
-        optional_values = {"gpa": gpa, "ielts": ielts, "tuition": tuition}
-        payload.update(
-            {key: value for key, value in optional_values.items() if value is not None}
-        )
+        optional_values = {
+            "gpa_min": gpa_min,
+            "ielts_min": ielts_min,
+            "toefl_min": toefl_min,
+            "tuition_per_year": tuition_per_year,
+            "ranking": ranking,
+        }
 
-        # Không lưu các chuỗi tùy chọn rỗng.
+        payload.update({
+            key: value
+            for key, value in optional_values.items()
+            if value is not None
+        })
+
+        if majors:
+            payload["majors"] = majors
+
         return {
             key: value
             for key, value in payload.items()
-            if value not in ("", None)
+            if value not in ("", None, [])
         }
 
     # ------------------------------------------------------------------
