@@ -27,15 +27,27 @@ class FormField:
 # nho: field phai khop dung ten fake_repo.py dang dung (id, name, country,
 # gpa, ielts, tuition, description) - khong phai schema ARCHITECTURE.md,
 # vi tuan 1 AdminView chay tren fake_repo (xem PLAN.md Issue 1.3)
+# FORM_FIELDS = (
+#     FormField("name", "Tên trường", True),
+#     FormField("country", "Quốc gia", True),
+#     FormField("gpa", "GPA tối thiểu"),
+#     FormField("ielts", "IELTS tối thiểu"),
+#     FormField("tuition", "Học phí/năm (USD)"),
+#     FormField("description", "Mô tả"),
+# )
 FORM_FIELDS = (
     FormField("name", "Tên trường", True),
     FormField("country", "Quốc gia", True),
-    FormField("gpa", "GPA tối thiểu"),
-    FormField("ielts", "IELTS tối thiểu"),
-    FormField("tuition", "Học phí/năm (USD)"),
-    FormField("description", "Mô tả"),
+    FormField("gpa_min", "GPA tối thiểu"),
+    FormField("ielts_min", "IELTS tối thiểu"),
+    FormField("toefl_min", "TOEFL tối thiểu"),
+    FormField("tuition_per_year", "Học phí mỗi năm"),
+    FormField("currency", "Đơn vị tiền tệ"),
+    FormField("ranking", "Xếp hạng"),
+    FormField("deadline", "Hạn nộp hồ sơ"),
+    FormField("majors", "Ngành học"),
+    FormField("overview", "Tổng quan"),
 )
-
 
 class AdminView(ttk.Frame):
     """Frame quản trị dữ liệu trường đại học."""
@@ -71,10 +83,6 @@ class AdminView(ttk.Frame):
     # ------------------------------------------------------------------
     def _configure_style(self) -> None:
         style = ttk.Style(self)
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
 
         style.configure("Admin.TFrame", background="#F5F7FB")
         style.configure(
