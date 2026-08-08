@@ -448,7 +448,14 @@ class AdminView(ttk.Frame):
         self.selected_id = document_id
 
         for field in FORM_FIELDS:
-            self.form_vars[field.key].set(self._display_value(document.get(field.key, "")))
+            value = document.get(field.key, "")
+
+            if field.key == "majors" and isinstance(value, list):
+                value = ", ".join(str(item) for item in value)
+
+            self.form_vars[field.key].set(
+                self._display_value(value)
+            )
 
         self.status_var.set(f"Đang chọn: {self.form_vars['name'].get() or document_id}")
 
