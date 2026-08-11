@@ -361,7 +361,7 @@ class ChatbotPage(tb.Frame):
             "Bạn có ưu tiên đặc biệt về quốc gia hoặc ngành học nào không?"
         )
 
-        all_unis = self._controller.repo.get_all()
+        all_unis = university_service.get_all(self._controller.repo)
         available_countries = sorted({u.get("country") for u in all_unis if u.get("country")})
         
         majors_set = set()
@@ -441,7 +441,7 @@ class ChatbotPage(tb.Frame):
         self._clear_controls()
         self._update_progress_bar()
 
-        all_unis = self._controller.repo.get_all()
+        all_unis = university_service.get_all(self._controller.repo)
         profile = self._wizard.get_profile()
 
         # Phân tích điểm phù hợp bằng L1 Rule Engine (tức thì, 0ms delay)
@@ -480,7 +480,7 @@ class ChatbotPage(tb.Frame):
         for rank_idx, item in enumerate(results, 1):
             uni_id = item["university_id"]
             score_val = item["score"]
-            uni = self._controller.repo.get_by_id(uni_id) or {}
+            uni = university_service.get_by_id(self._controller.repo, uni_id) or {}
 
             name = uni.get("name", item.get("name", "N/A"))
             country = uni.get("country", "")
@@ -653,7 +653,7 @@ class ChatbotPage(tb.Frame):
         self._scroll_to_bottom()
 
         profile = self._wizard.get_profile()
-        all_unis = self._controller.repo.get_all()
+        all_unis = university_service.get_all(self._controller.repo)
 
         def worker():
             answer = recommend_service.chat_with_ai(user_question, profile, all_unis)
