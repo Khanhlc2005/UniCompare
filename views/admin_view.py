@@ -24,15 +24,16 @@ class FormField:
     required: bool = False
 
 
-# nho: field phai khop dung ten fake_repo.py dang dung (id, name, country,
-# gpa, ielts, tuition, description) - khong phai schema ARCHITECTURE.md,
-# vi tuan 1 AdminView chay tren fake_repo (xem PLAN.md Issue 1.3)
+# field phai khop dung schema ARCHITECTURE.md muc 4 / seed_data.json
+# (gpa_min, ielts_min, tuition_per_year, currency) - fake_repo.py doc thang
+# tu seed_data.json nen cung dung ten field nay, khong con schema cu rieng
 FORM_FIELDS = (
     FormField("name", "Tên trường", True),
     FormField("country", "Quốc gia", True),
-    FormField("gpa", "GPA tối thiểu"),
-    FormField("ielts", "IELTS tối thiểu"),
-    FormField("tuition", "Học phí/năm (USD)"),
+    FormField("gpa_min", "GPA tối thiểu"),
+    FormField("ielts_min", "IELTS tối thiểu"),
+    FormField("tuition_per_year", "Học phí/năm"),
+    FormField("currency", "Đơn vị tiền tệ (VD: USD, CNY)"),
     FormField("description", "Mô tả"),
 )
 
@@ -43,9 +44,9 @@ class AdminView(ttk.Frame):
     TREE_COLUMNS = (
         "name",
         "country",
-        "gpa",
-        "ielts",
-        "tuition",
+        "gpa_min",
+        "ielts_min",
+        "tuition_per_year",
     )
 
     def __init__(
@@ -224,16 +225,16 @@ class AdminView(ttk.Frame):
         headings = {
             "name": "Tên trường",
             "country": "Quốc gia",
-            "gpa": "GPA",
-            "ielts": "IELTS",
-            "tuition": "Học phí",
+            "gpa_min": "GPA",
+            "ielts_min": "IELTS",
+            "tuition_per_year": "Học phí",
         }
         widths = {
             "name": 260,
             "country": 120,
-            "gpa": 70,
-            "ielts": 70,
-            "tuition": 105,
+            "gpa_min": 70,
+            "ielts_min": 70,
+            "tuition_per_year": 120,
         }
 
         for column in self.TREE_COLUMNS:
@@ -350,11 +351,15 @@ class AdminView(ttk.Frame):
         return str(value)
 
     @staticmethod
-    def _format_tuition(value: Any) -> str:
+    def _format_tuition(document: Document) -> str:
+        # moi truong co the dung don vi tien te khac nhau (VND/CNY/JPY/...),
+        # khong duoc hard-code $ - doc dung field currency cua tung truong
+        value = document.get("tuition_per_year")
         if value in (None, ""):
             return ""
         try:
-            return f"${float(value):,.0f}"
+            currency = document.get("currency") or "USD"
+            return f"{float(value):,.0f} {currency}"
         except (TypeError, ValueError):
             return str(value)
 
@@ -392,9 +397,9 @@ class AdminView(ttk.Frame):
                     values=(
                         self._display_value(document.get("name", "")),
                         self._display_value(document.get("country", "")),
-                        self._display_value(document.get("gpa", "")),
-                        self._display_value(document.get("ielts", "")),
-                        self._format_tuition(document.get("tuition", "")),
+                        self._display_value(document.get("gpa_min", "")),
+                        self._display_value(document.get("ielts_min", "")),
+                        self._format_tuition(document),
                     ),
                     tags=(document_id,),
                 )
@@ -467,9 +472,9 @@ class AdminView(ttk.Frame):
         if not country:
             raise ValueError("Quốc gia là trường bắt buộc.")
 
-        gpa = self._to_optional_float(self.form_vars["gpa"].get(), "GPA")
-        ielts = self._to_optional_float(self.form_vars["ielts"].get(), "IELTS tối thiểu")
-        tuition = self._to_optional_float(self.form_vars["tuition"].get(), "Học phí")
+        gpa = self._to_optional_float(self.form_vars["gpa_min"].get(), "GPA")
+        ielts = self._to_optional_float(self.form_vars["ielts_min"].get(), "IELTS tối thiểu")
+        tuition = self._to_optional_float(self.form_vars["tuition_per_year"].get(), "Học phí")
 
         if gpa is not None and gpa > 4:
             raise ValueError("GPA phải nằm trong khoảng 0 đến 4.")
@@ -480,9 +485,14 @@ class AdminView(ttk.Frame):
             "name": name,
             "country": country,
             "description": self.form_vars["description"].get().strip(),
+            "currency": self.form_vars["currency"].get().strip(),
         }
 
-        optional_values = {"gpa": gpa, "ielts": ielts, "tuition": tuition}
+        optional_values = {
+            "gpa_min": gpa,
+            "ielts_min": ielts,
+            "tuition_per_year": tuition,
+        }
         payload.update(
             {key: value for key, value in optional_values.items() if value is not None}
         )
@@ -625,27 +635,30 @@ class MemoryUniversityRepository:
                 "id": "1",
                 "name": "National University of Singapore",
                 "country": "Singapore",
-                "gpa": 3.8,
-                "ielts": 7.5,
-                "tuition": 22000,
+                "gpa_min": 3.8,
+                "ielts_min": 7.5,
+                "tuition_per_year": 22000,
+                "currency": "USD",
                 "description": "Dai hoc so 1 Chau A.",
             },
             {
                 "id": "2",
                 "name": "University of Melbourne",
                 "country": "Australia",
-                "gpa": 3.7,
-                "ielts": 7.0,
-                "tuition": 28500,
+                "gpa_min": 3.7,
+                "ielts_min": 7.0,
+                "tuition_per_year": 28500,
+                "currency": "USD",
                 "description": "Top dau Australia, manh ve nghien cuu.",
             },
             {
                 "id": "3",
                 "name": "University of Toronto",
                 "country": "Canada",
-                "gpa": 3.6,
-                "ielts": 6.5,
-                "tuition": 29000,
+                "gpa_min": 3.6,
+                "ielts_min": 6.5,
+                "tuition_per_year": 29000,
+                "currency": "USD",
                 "description": "Top dau Canada, co so vat chat hien dai.",
             },
         ]

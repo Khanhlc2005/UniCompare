@@ -20,7 +20,7 @@ import ttkbootstrap as tb
 from pymongo.errors import PyMongoError
 
 from repositories.mongo_repo import MongoRepositoryError
-from services import watchlist_service, compare_service
+from services import watchlist_service, compare_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.state_banner import StateBanner
 
@@ -94,11 +94,11 @@ class DetailPage(tb.Frame):
         màn hình)."""
         try:
             if university_id is not None:
-                uni = self._controller.repo.get_by_id(university_id)
+                uni = university_service.get_by_id(self._controller.repo, university_id)
                 if uni:
                     self._data = uni
             elif not self._data:
-                all_unis = self._controller.repo.get_all()
+                all_unis = university_service.get_all(self._controller.repo)
                 self._data = all_unis[0] if all_unis else {}
         except (MongoRepositoryError, PyMongoError) as exc:
             self._render_error(exc)
