@@ -13,8 +13,11 @@ StickyCompareBar (Issue 2.9).
 
 Issue 3.3 (chốt §5.2.1, đợt polish sau đổi lại bố cục theo mock-up mới):
 KHÔNG còn tách tab "Bảng"/"Biểu đồ" nữa - gộp chung 1 trang: bảng tiêu chí
-truớc, "Trực quan hoá" (2 chart) ngay dưới, 2 chart nằm NGANG hàng (trước
-xếp dọc). Mỗi trường có 1 màu cố định (chấm màu trước tên trong bảng,
+truớc, "Trực quan hoá" (2 chart) ngay dưới, 2 chart nằm NGANG hàng, MỖI
+chart 1 khung RoundedFrame riêng chia đều 50/50 (2 Figure độc lập, không
+còn 1 Figure 2-subplot chung như bản đầu - tách ra để mỗi chart tự
+tight_layout(), không bị lệch margin khi tên trường ở chart kia quá dài).
+Mỗi trường có 1 màu cố định (chấm màu trước tên trong bảng,
 dùng lại đúng màu đó cho cột/bar cua truong trong chart hoc phi) - lay tu
 bang mau categorical co dinh MAU_THEO_THU_TU, KHONG tu bia mau/doi thu tu
 theo filter (xem dataviz skill: "color follows the entity, never rank").
@@ -27,6 +30,8 @@ Van giu dung 2 chart cu, khong doi field/logic tinh toan:
 
 """
 
+import textwrap
+
 import ttkbootstrap as tb
 from pymongo.errors import PyMongoError
 
@@ -36,9 +41,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from repositories.mongo_repo import MongoRepositoryError
-from services import compare_service
+from services import compare_service, university_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.compare_chip import CompareChip
+from views.components.rounded_frame import RoundedFrame
 from views.components.state_banner import StateBanner
 
 # he so quy doi tuition_vnd (VND nguyen, vi du 91_000_000) ve don vi TRIEU
@@ -89,7 +95,7 @@ class ComparePage(tb.Frame):
     def _get_compare_data(self):
         data = []
         for uid in compare_service.get_compare_ids():
-            uni = self._controller.repo.get_by_id(uid)
+            uni = university_service.get_by_id(self._controller.repo, uid)
             if uni:
                 data.append(uni)
         return data
@@ -145,8 +151,13 @@ class ComparePage(tb.Frame):
             chip.pack(side="left", padx=(0, 8), pady=4)
 
     def _build_table(self, parent, data, mau_theo_truong):
-        table = tb.Frame(parent, bootstyle="light", padding=16)
-        table.pack(fill="x", padx=28, pady=(0, 16))
+        # dung chung RoundedFrame voi 2 the chart ben duoi de dong nhat style
+        # (bo goc + vien mong) giua cac khung tren trang So sanh
+        card = RoundedFrame(parent)
+        card.pack(fill="x", padx=28, pady=(0, 16))
+
+        table = tb.Frame(card.body, bootstyle="light", padding=16)
+        table.pack(fill="both", expand=True)
 
         # cot dau la ten tieu chi, cac cot sau la tung truong dang chon
         for col in range(len(data) + 1):
@@ -187,7 +198,10 @@ class ComparePage(tb.Frame):
                 if value is None:
                     value = "N/A"
                 elif field == "tuition":
-                    value = f"${value:,.0f}"
+                    # moi truong co the dung don vi tien te khac nhau (VND/
+                    # CNY/JPY/...), khong duoc hard-code $ (xem uni["currency"])
+                    currency = uni.get("currency", "USD")
+                    value = f"{value:,.0f} {currency}"
                 elif field == "ranking":
                     value = f"#{value:g}"
 
@@ -206,25 +220,42 @@ class ComparePage(tb.Frame):
             font=("Segoe UI", 9, "bold")
         ).pack(anchor="w", padx=28, pady=(4, 8))
 
-        chart_frame = tb.Frame(parent, bootstyle="light", padding=16)
-        chart_frame.pack(fill="both", expand=True, padx=28, pady=(0, 24))
+        # 2 khung rieng, chia deu 50/50 (columnconfigure weight bang nhau)
+        # thay vi 1 khung to chua chung 1 Figure 2-subplot nhu truoc - moi
+        # chart co Figure/tight_layout rieng nen khong con canh tranh margin
+        # voi nhau (ly do gay lech bo cuc khi ten truong dai o ban truoc)
+        charts_row = tb.Frame(parent)
+        charts_row.pack(fill="both", expand=True, padx=28, pady=(0, 24))
+        charts_row.columnconfigure(0, weight=1, uniform="chart_col")
+        charts_row.columnconfigure(1, weight=1, uniform="chart_col")
+        charts_row.rowconfigure(0, weight=1, minsize=380)
 
-        # 1 Figure duy nhat (khong dung matplotlib.pyplot de tranh giu
-        # figure trong state global toan cuc khi nhung vao Tkinter - rui ro
-        # leak bo nho khi mo/dong nhieu lan). 2 subplot nam NGANG (1 hang, 2
-        # cot) thay vi xep doc nhu truoc, khop bo cuc "2 the canh nhau".
-        fig = Figure(figsize=(13, 4.4), dpi=100)
-        ax_hoc_phi, ax_ngoai_ngu = fig.subplots(1, 2)
+        card_hoc_phi = RoundedFrame(charts_row)
+        card_hoc_phi.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
 
+        card_ngoai_ngu = RoundedFrame(charts_row)
+        card_ngoai_ngu.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+
+        # khong dung matplotlib.pyplot de tranh giu figure trong state
+        # global toan cuc khi nhung vao Tkinter - rui ro leak bo nho khi
+        # mo/dong nhieu lan (ap dung cho ca 2 Figure duoi day)
+        fig_hoc_phi = Figure(figsize=(6.2, 4.2), dpi=100)
+        ax_hoc_phi = fig_hoc_phi.add_subplot(111)
         self._ve_chart_hoc_phi(ax_hoc_phi, data, mau_theo_truong)
+        fig_hoc_phi.tight_layout()
+
+        canvas_hoc_phi = FigureCanvasTkAgg(fig_hoc_phi, master=card_hoc_phi.body)
+        canvas_hoc_phi.get_tk_widget().pack(fill="both", expand=True, padx=12, pady=12)
+        canvas_hoc_phi.draw_idle()
+
+        fig_ngoai_ngu = Figure(figsize=(6.2, 4.2), dpi=100)
+        ax_ngoai_ngu = fig_ngoai_ngu.add_subplot(111)
         self._ve_chart_ngoai_ngu(ax_ngoai_ngu, data)
+        fig_ngoai_ngu.tight_layout()
 
-        fig.tight_layout(w_pad=4)
-
-        canvas = FigureCanvasTkAgg(fig, master=chart_frame)
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-        canvas.draw_idle()
-        return canvas
+        canvas_ngoai_ngu = FigureCanvasTkAgg(fig_ngoai_ngu, master=card_ngoai_ngu.body)
+        canvas_ngoai_ngu.get_tk_widget().pack(fill="both", expand=True, padx=12, pady=12)
+        canvas_ngoai_ngu.draw_idle()
 
     def _ve_chart_hoc_phi(self, ax, data, mau_theo_truong):
         """Chart 1 (§5.2.1): học phí/năm - tuition_vnd quy đổi triệu VND,
@@ -241,7 +272,15 @@ class ComparePage(tb.Frame):
         thieu = [n for n, v, _ in cap if not isinstance(v, (int, float))]
 
         if trieu:
-            ax.barh(ten, trieu, color=mau)
+            # ten truong dai (VD "Học viện Hoàng gia London (Imperial...)")
+            # lam tight_layout tu chua margin trai qua lon, khien bar bi
+            # lech/thu hep so voi chart ngoai ngu ben canh - be toi da 2
+            # dong (textwrap tu cat chu, khong cat giua tu) de bo cuc deu hon
+            ten_hien_thi = [
+                textwrap.fill(n, width=18, max_lines=2, placeholder="...")
+                for n in ten
+            ]
+            ax.barh(ten_hien_thi, trieu, color=mau)
             ax.invert_yaxis()
             ax.set_xlabel("Triệu VND")
         else:
@@ -320,8 +359,14 @@ class ComparePage(tb.Frame):
         ax.set_ylabel("IELTS")
         ax_toefl.set_ylabel("TOEFL")
 
+        # be ten truong dai toi da 2 dong - cung ly do nhu chart hoc phi ben
+        # trai (ten dai lam nhan bi chong len nhau/tran ra ngoai khung)
+        ten_hien_thi = [
+            textwrap.fill(n, width=18, max_lines=2, placeholder="...")
+            for n in ten
+        ]
         ax.set_xticks(x)
-        ax.set_xticklabels(ten, rotation=15, ha="right", fontsize=9)
+        ax.set_xticklabels(ten_hien_thi, rotation=15, ha="right", fontsize=9)
 
         duong, nhan = ax.get_legend_handles_labels()
         duong2, nhan2 = ax_toefl.get_legend_handles_labels()

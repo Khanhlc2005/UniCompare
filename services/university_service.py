@@ -17,6 +17,17 @@ duoc filter <=, coi nhu filter khong co tac dung gi).
 import unicodedata
 import math
 
+def get_all(repo) -> list[dict]:
+    """Lay toan bo danh sach truong - view khong duoc goi thang repo.get_all()
+    (ARCHITECTURE.md muc 2: UI khong bao gio cham repository)."""
+    return repo.get_all()
+
+
+def get_by_id(repo, university_id: str) -> dict | None:
+    """Lay 1 truong theo id - view khong duoc goi thang repo.get_by_id()."""
+    return repo.get_by_id(university_id)
+
+
 def lay_hoc_phi(uni: dict) -> float | None:
     """Doc hoc phi/nam, uu tien field chuan tuition_per_year, fallback ve
     tuition (schema cu cua fake_repo). Tra None neu khong co field nao."""

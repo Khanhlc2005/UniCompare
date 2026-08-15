@@ -482,7 +482,39 @@ class ChatbotPage(tb.Frame):
         )
         self._add_user_bubble(user_msg)
 
-        self._run_l1_analysis_and_render()
+        all_unis = university_service.get_all(self._controller.repo)
+        available_countries = sorted({u.get("country") for u in all_unis if u.get("country")})
+        
+        majors_set = set()
+        for u in all_unis:
+            for m in u.get("majors", []):
+                if m:
+                    majors_set.add(m)
+        available_majors = sorted(majors_set)[:6]
+
+        selected_countries = set()
+        selected_majors = set()
+
+        options_frame = tb.Frame(self._control_frame)
+        options_frame.pack(fill="x", pady=(0, 8))
+
+        # Chọn quốc gia
+        tb.Label(options_frame, text="Quốc gia:", font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        c_row = tb.Frame(options_frame)
+        c_row.pack(fill="x", pady=(2, 6))
+
+        for country in available_countries:
+            var = tk.BooleanVar(value=False)
+            def _toggle_c(c=country, v=var):
+                if v.get():
+                    selected_countries.add(c)
+                else:
+                    selected_countries.discard(c)
+
+            tb.Checkbutton(
+                c_row, text=country, variable=var, command=_toggle_c,
+                bootstyle="outline-toolbutton",
+            ).pack(side="left", padx=4)
 
     def _run_l1_analysis_and_render(self):
         """Chạy thuật toán L1 Rule Engine, render thẻ dạng LƯỚI 3 CỘT mềm mại kèm quy đổi VNĐ."""
@@ -495,7 +527,39 @@ class ChatbotPage(tb.Frame):
             self._add_bot_bubble("⚠️ Không tìm thấy dữ liệu trường đại học nào trong cơ sở dữ liệu.")
             return
 
-        results = recommend_service.score_all(self._profile, all_unis, top_n=6)
+        def finish():
+            c_list = list(selected_countries)
+            m_list = list(selected_majors)
+            self._wizard.set_preferences(c_list, m_list)
+            
+            user_txt = []
+            if c_list:
+                user_txt.append(f"Quốc gia: {', '.join(c_list)}")
+            if m_list:
+                user_txt.append(f"Ngành: {', '.join(m_list)}")
+            
+            self._add_user_bubble(" | ".join(user_txt) if user_txt else "Không yêu cầu ưu tiên cụ thể")
+            self._show_results()
+
+        btn_row = tb.Frame(self._control_frame)
+        btn_row.pack(fill="x")
+
+        tb.Button(
+            btn_row, text="✨ Hoàn tất & Phân tích Gợi ý",
+            style="BannerLink.TButton", command=finish,
+        ).pack(side="right")
+
+    # ── 4. Card Kết Quả Gợi Ý & AI Interactive Chat ─────────────────────
+
+    def _show_results(self):
+        self._clear_controls()
+        self._update_progress_bar()
+
+        all_unis = university_service.get_all(self._controller.repo)
+        profile = self._wizard.get_profile()
+
+        # Phân tích điểm phù hợp bằng L1 Rule Engine (tức thì, 0ms delay)
+        results = recommend_service.score_all(profile, all_unis, top_n=5)
         top_score = results[0]["score"] if results else 0
 
         if top_score == 0:
@@ -523,7 +587,7 @@ class ChatbotPage(tb.Frame):
 
             uni_id = item["university_id"]
             score_val = item["score"]
-            uni = self._controller.repo.get_by_id(uni_id) or {}
+            uni = university_service.get_by_id(self._controller.repo, uni_id) or {}
 
             name = uni.get("name", item.get("name", "N/A"))
             country = uni.get("country", "")
@@ -760,12 +824,8 @@ class ChatbotPage(tb.Frame):
         loading_lbl.pack(side="left", anchor="w")
         self._scroll_to_bottom()
 
-        try:
-            all_unis = self._controller.repo.get_all() or []
-        except Exception:
-            all_unis = []
-
-        profile = self._profile if self._has_analyzed else {}
+        profile = self._wizard.get_profile()
+        all_unis = university_service.get_all(self._controller.repo)
 
         def worker():
             answer = recommend_service.chat_with_ai(user_question, profile, all_unis)

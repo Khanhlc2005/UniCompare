@@ -48,7 +48,7 @@ class WatchlistPage(tb.Frame):
         # dau khac nen phai bat rieng (Issue #54, edge case mat ket noi Mongo).
         data = []
         for uid in watchlist_service.get_watchlist_ids():
-            uni = self._controller.repo.get_by_id(uid)
+            uni = university_service.get_by_id(self._controller.repo, uid)
             if uni:
                 data.append(uni)
         return data

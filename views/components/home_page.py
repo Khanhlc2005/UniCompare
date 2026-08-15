@@ -12,6 +12,7 @@ import ttkbootstrap as tb
 from pymongo.errors import PyMongoError
 
 from repositories.mongo_repo import MongoRepositoryError
+from services import university_service
 from views.components.scrollable_frame import ScrollableFrame
 from views.components.state_banner import StateBanner
 
@@ -63,7 +64,7 @@ class HomePage(tb.Frame):
         bao giờ để lại 1 vùng trắng dở dang.
         """
         try:
-            all_unis = self._controller.repo.get_all()
+            all_unis = university_service.get_all(self._controller.repo)
         except (MongoRepositoryError, PyMongoError) as exc:
             self._render_error(exc)
             return
